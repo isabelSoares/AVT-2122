@@ -226,4 +226,5 @@ $RECYCLE.BIN/
 # Uncaught (Created by us)
 Dependencies
 x64
-Browse.VC.db
+Browse.VC.*
+v16

@@ -13,7 +13,6 @@
 #include <math.h>
 #include <iostream>
 #include <sstream>
-
 #include <string>
 
 // include GLEW to access OpenGL 3.3 functions
@@ -27,7 +26,9 @@
 #include "VSShaderlib.h"
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
-#include "basic_geometry.h"
+#include "geometry.h"
+
+using namespace std;
 
 #define CAPTION "AVT Per Fragment Phong Lightning Demo"
 int WindowHandle = 0;
@@ -37,9 +38,8 @@ unsigned int FrameCount = 0;
 
 VSShaderLib shader;
 
-struct MyMesh mesh[4];
-int objId=0; //id of the object mesh - to be used as index of mesh: mesh[objID] means the current mesh
-
+//Vector with meshes
+vector<struct MyMesh> myMeshes;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -133,18 +133,20 @@ void renderScene(void) {
 		multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
 		glUniform4fv(lPos_uniformId, 1, res);
 
-	objId=0;
+	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+
 	for (int i = 0 ; i < 2; ++i) {
 		for (int j = 0; j < 2; ++j) {
+
 			// send the material
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-			glUniform4fv(loc, 1, mesh[objId].mat.ambient);
+			glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-			glUniform4fv(loc, 1, mesh[objId].mat.diffuse);
+			glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, mesh[objId].mat.specular);
+			glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
 			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc,mesh[objId].mat.shininess);
+			glUniform1f(loc, myMeshes[objId].mat.shininess);
 			pushMatrix(MODEL);
 			translate(MODEL, i*2.0f, 0.0f, j*2.0f);
 
@@ -156,13 +158,13 @@ void renderScene(void) {
 			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
 			// Render mesh
-			glBindVertexArray(mesh[objId].vao);
+			glBindVertexArray(myMeshes[objId].vao);
 			
 			if (!shader.isProgramValid()) {
 				printf("Program Not Valid!\n");
 				exit(1);	
 			}
-			glDrawElements(mesh[objId].type,mesh[objId].numIndexes, GL_UNSIGNED_INT, 0);
+			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 			glBindVertexArray(0);
 
 			popMatrix(MODEL);
@@ -336,26 +338,28 @@ void init()
 	float shininess= 100.0f;
 	int texcount = 0;
 
+	MyMesh amesh;
+
 	// create geometry and VAO of the pawn
-	objId=0;
-	memcpy(mesh[objId].mat.ambient, amb,4*sizeof(float));
-	memcpy(mesh[objId].mat.diffuse, diff,4*sizeof(float));
-	memcpy(mesh[objId].mat.specular, spec,4*sizeof(float));
-	memcpy(mesh[objId].mat.emissive, emissive,4*sizeof(float));
-	mesh[objId].mat.shininess = shininess;
-	mesh[objId].mat.texCount = texcount;
-	createPawn();
+	amesh = createPawn();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
 
 	
 	// create geometry and VAO of the sphere
-	objId=1;
-	memcpy(mesh[objId].mat.ambient, amb,4*sizeof(float));
-	memcpy(mesh[objId].mat.diffuse, diff,4*sizeof(float));
-	memcpy(mesh[objId].mat.specular, spec,4*sizeof(float));
-	memcpy(mesh[objId].mat.emissive, emissive,4*sizeof(float));
-	mesh[objId].mat.shininess = shininess;
-	mesh[objId].mat.texCount = texcount;
-	createSphere(1.0f, 20);
+	amesh = createSphere(1.0f, 20);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
 
 	float amb1[]= {0.3f, 0.0f, 0.0f, 1.0f};
 	float diff1[] = {0.8f, 0.1f, 0.1f, 1.0f};
@@ -363,24 +367,24 @@ void init()
 	shininess=500.0;
 
 	// create geometry and VAO of the cylinder
-	objId=2;
-	memcpy(mesh[objId].mat.ambient, amb1,4*sizeof(float));
-	memcpy(mesh[objId].mat.diffuse, diff1,4*sizeof(float));
-	memcpy(mesh[objId].mat.specular, spec1,4*sizeof(float));
-	memcpy(mesh[objId].mat.emissive, emissive,4*sizeof(float));
-	mesh[objId].mat.shininess = shininess;
-	mesh[objId].mat.texCount = texcount;
-	createCylinder(1.5f,0.5f,20);
+	amesh = createCylinder(1.5f, 0.5f, 20);
+	memcpy(amesh.mat.ambient, amb1, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff1, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec1, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
 
 	// create geometry and VAO of the 
-	objId=3;
-	memcpy(mesh[objId].mat.ambient, amb1,4*sizeof(float));
-	memcpy(mesh[objId].mat.diffuse, diff1,4*sizeof(float));
-	memcpy(mesh[objId].mat.specular, spec1,4*sizeof(float));
-	memcpy(mesh[objId].mat.emissive, emissive,4*sizeof(float));
-	mesh[objId].mat.shininess = shininess;
-	mesh[objId].mat.texCount = texcount;
-	createCone(1.5f,0.5f, 20);
+	amesh = createCone(1.5f, 0.5f, 20);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

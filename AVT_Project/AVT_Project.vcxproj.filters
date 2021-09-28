@@ -35,9 +35,6 @@
     <ClInclude Include="AVTmathLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="basic_geometry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="cube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -48,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Texture_Loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

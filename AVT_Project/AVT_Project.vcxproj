@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{4c7fee2e-1264-4fae-ae98-1c1007ac1269}</ProjectGuid>
+    <ProjectGuid>{b67506d1-7973-40eb-882d-aae87243e9c6}</ProjectGuid>
     <RootNamespace>AVT_Project</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -165,8 +165,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h" />
-    <ClInclude Include="basic_geometry.h" />
     <ClInclude Include="cube.h" />
+    <ClInclude Include="geometry.h" />
     <ClInclude Include="Texture_Loader.h" />
     <ClInclude Include="VertexAttrDef.h" />
     <ClInclude Include="vsShaderLib.h" />

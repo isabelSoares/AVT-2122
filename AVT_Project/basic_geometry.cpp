@@ -18,19 +18,18 @@ Basic Revolution Geometry
 #include <GL/freeglut.h>
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
-#include "basic_geometry.h"
+#include "geometry.h"
 #include "cube.h"
 
-extern struct MyMesh mesh[];
-extern int objId;
 
 GLuint VboId[2];
 
-void createQuad(float size_x, float size_y) {
+MyMesh createQuad(float size_x, float size_y) {
 	
 	int i;
 	float vert[16];
-	mesh[objId].numIndexes = 2*3;
+	MyMesh amesh;
+	amesh.numIndexes = 2*3;
 
 	memcpy(vert, quad_vertices, sizeof(float) * 16);
 
@@ -39,8 +38,8 @@ void createQuad(float size_x, float size_y) {
 		vert[i*4+1] *= size_y;
 	}
 
-	glGenVertexArrays(1, &(mesh[objId].vao));
-	glBindVertexArray(mesh[objId].vao);
+	glGenVertexArrays(1, &(amesh.vao));
+	glBindVertexArray(amesh.vao);
 
 	glGenBuffers(2, VboId);
 	glBindBuffer(GL_ARRAY_BUFFER, VboId[0]);
@@ -59,21 +58,22 @@ void createQuad(float size_x, float size_y) {
     
     //index buffer
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VboId[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * mesh[objId].numIndexes, quad_faceIndex , GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * amesh.numIndexes, quad_faceIndex , GL_STATIC_DRAW);
     
     // unbind the VAO
     glBindVertexArray(0);
   
-	mesh[objId].type = GL_TRIANGLES;
+	amesh.type = GL_TRIANGLES;
+	return(amesh);
 }
 
-void createCube() {
+MyMesh createCube() {
 
+	MyMesh amesh;
+	amesh.numIndexes = faceCount *3;
 
-	mesh[objId].numIndexes = faceCount *3;
-
-	glGenVertexArrays(1, &(mesh[objId].vao));
-	glBindVertexArray(mesh[objId].vao);
+	glGenVertexArrays(1, &(amesh.vao));
+	glBindVertexArray(amesh.vao);
 
 	glGenBuffers(2, VboId);
 	glBindBuffer(GL_ARRAY_BUFFER, VboId[0]);
@@ -95,31 +95,32 @@ void createCube() {
 
 	//index buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VboId[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * mesh[objId].numIndexes, faceIndex , GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * amesh.numIndexes, faceIndex , GL_STATIC_DRAW);
 
 // unbind the VAO
 	glBindVertexArray(0);
 	
-	mesh[objId].type = GL_TRIANGLES;
+	amesh.type = GL_TRIANGLES;
+	return(amesh);
 }
 
 
-void createSphere(float radius, int divisions) {
+MyMesh createSphere(float radius, int divisions) {
 
 	float *p = circularProfile(-3.14159f/2.0f, 3.14159f/2.0f, radius, divisions);
-	computeVAO(divisions+1, p+2, p, divisions*2, 0.0f);
+	return(computeVAO(divisions+1, p+2, p, divisions*2, 0.0f));
 }
 
 
-void createTorus(float innerRadius, float outerRadius, int rings, int sides) {
+MyMesh createTorus(float innerRadius, float outerRadius, int rings, int sides) {
 
 	float tubeRadius = (outerRadius - innerRadius) * 0.5f;
 	float *p = circularProfile(-3.14159f, 3.14159f, tubeRadius, sides, innerRadius + tubeRadius);
-	computeVAO(sides+1, p+2, p, rings, 0.0f);
+	return(computeVAO(sides+1, p+2, p, rings, 0.0f));
 }
 
 
-void createCylinder(float height, float radius, int sides) {
+MyMesh createCylinder(float height, float radius, int sides) {
 
 	float p[] = {
 			-radius,	-height*0.5f, 
@@ -130,10 +131,10 @@ void createCylinder(float height, float radius, int sides) {
 			-radius,	 height*0.5f
 	};
 
-	computeVAO(4, p+2, p, sides, 0.0f);
+	return(computeVAO(4, p+2, p, sides, 0.0f));
 }
 
-void createCone(float height, float baseRadius, int sides) {
+MyMesh createCone(float height, float baseRadius, int sides) {
 
 	float v[2];
 	v[0] = -baseRadius;
@@ -168,11 +169,11 @@ void createCone(float height, float baseRadius, int sides) {
 	//		-baseRadius,	height*2.0f,
 	//	};
 
-	computeVAO((p.size()-4)/2, &(p[2]), &(p[0]), sides, 0.0f);
+	return(computeVAO((p.size()-4)/2, &(p[2]), &(p[0]), sides, 0.0f));
 }
 
 
-void createPawn() {
+MyMesh createPawn() {
 
 		float p[] = {0.0f, 0.0f, 
 					  0.98f, 0.0f, 
@@ -259,12 +260,12 @@ void createPawn() {
 											(points[(numPoints-2)*2 + 1] - points[(numPoints-3)*2 + 1]);
 	}
 
-	computeVAO(numP, p, points, sides, smoothCos);
+	return(computeVAO(numP, p, points, sides, smoothCos));
 }
 
-void computeVAO(int numP, float *p, float *points, int sides, float smoothCos) {
+MyMesh computeVAO(int numP, float *p, float *points, int sides, float smoothCos) {
 	// Compute and store vertices
-
+	
 	int numSides = sides;
 	int numPoints = numP + 2;
 
@@ -357,15 +358,15 @@ void computeVAO(int numP, float *p, float *points, int sides, float smoothCos) {
 		k += smoothness[i];	
 	}
 
-	
-	mesh[objId].numIndexes = count;
+	MyMesh amesh;
+	amesh.numIndexes = count;
 
 
 	/* Calculate the tangent array*/
-	ComputeTangentArray(numVertices, vertex, normal, textco, mesh[objId].numIndexes, faceIndex, tangent);
+	ComputeTangentArray(numVertices, vertex, normal, textco, amesh.numIndexes, faceIndex, tangent);
 
-	glGenVertexArrays(1, &(mesh[objId].vao));
-	glBindVertexArray(mesh[objId].vao);
+	glGenVertexArrays(1, &(amesh.vao));
+	glBindVertexArray(amesh.vao);
 
 	glGenBuffers(2, VboId);
 	glBindBuffer(GL_ARRAY_BUFFER, VboId[0]);
@@ -386,12 +387,13 @@ void computeVAO(int numP, float *p, float *points, int sides, float smoothCos) {
 
 	//index buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VboId[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * mesh[objId].numIndexes, faceIndex , GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * amesh.numIndexes, faceIndex , GL_STATIC_DRAW);
 
 // unbind the VAO
 	glBindVertexArray(0);
 
-	mesh[objId].type = GL_TRIANGLES;
+	amesh.type = GL_TRIANGLES;
+	return(amesh);
 }
 
 int revSmoothNormal2(float *p, float *nx, float *ny, float smoothCos, int beginEnd) {

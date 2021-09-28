@@ -24,11 +24,9 @@ void Texture2D_Loader(unsigned int *textureArray, const char *strFileName, int I
 	ilEnable(IL_ORIGIN_SET);
 	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
 	if (ilLoadImage(strFileName))
-		printf("2D Texture: Image sucessfully loaded.\n");
-	else {
-		printf("2D Texture: Image could not be loaded.\n");
+		printf("2D Texture: Image %s sucessfully loaded.\n", strFileName);
+	else
 		exit(0);
-	}
 	
 	ILint bpp = ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
 	
@@ -72,10 +70,8 @@ void TextureCubeMap_Loader(unsigned int *textureArray, const char **strFileName,
 		 
 		if (ilLoadImage(strFileName[i]))  //Image loaded with upper left origin
 			printf("Cubemap face %d: Image sucessfully loaded.\n", i);
-		else {
-			printf("Cubemap face %d: Image could not be loaded.\n", i);
+		else
 			exit(0);
-		}
 
 		ILint bpp = ilGetInteger(IL_IMAGE_BITS_PER_PIXEL);
 

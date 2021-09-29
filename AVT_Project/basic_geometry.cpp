@@ -79,11 +79,19 @@ MyMesh createCube() {
 	glBindBuffer(GL_ARRAY_BUFFER, VboId[0]);
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices)+sizeof(normals)+sizeof(texCoords)+sizeof(tangents),NULL,GL_STATIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+
+	float* ptr = (float*)malloc(sizeof(vertices) + sizeof(normals) + sizeof(texCoords) + sizeof(tangents));
+	memcpy(ptr, vertices, sizeof(vertices));
+	memcpy(ptr + sizeof(vertices) / sizeof(float), normals, sizeof(normals));
+	memcpy(ptr + (sizeof(vertices) + sizeof(normals))/ sizeof(float), texCoords, sizeof(texCoords));
+	memcpy(ptr + (sizeof(vertices) + sizeof(normals) + sizeof(texCoords)) / sizeof(float), tangents, sizeof(tangents));
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(normals) + sizeof(texCoords) + sizeof(tangents), ptr, GL_STATIC_DRAW);
+	/*	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(normals), normals);
 		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices)+ sizeof(normals), sizeof(texCoords), texCoords);
 		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices)+sizeof(normals)+sizeof(texCoords), sizeof(tangents), tangents);
-
+	*/
 	glEnableVertexAttribArray(VERTEX_COORD_ATTRIB);
 	glVertexAttribPointer(VERTEX_COORD_ATTRIB, 4, GL_FLOAT, 0, 0, 0);
 	glEnableVertexAttribArray(NORMAL_ATTRIB);

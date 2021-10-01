@@ -87,11 +87,7 @@ MyMesh createCube() {
 	memcpy(ptr + (sizeof(vertices) + sizeof(normals) + sizeof(texCoords)) / sizeof(float), tangents, sizeof(tangents));
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(normals) + sizeof(texCoords) + sizeof(tangents), ptr, GL_STATIC_DRAW);
-	/*	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
-		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(normals), normals);
-		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices)+ sizeof(normals), sizeof(texCoords), texCoords);
-		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices)+sizeof(normals)+sizeof(texCoords), sizeof(tangents), tangents);
-	*/
+	
 	glEnableVertexAttribArray(VERTEX_COORD_ATTRIB);
 	glVertexAttribPointer(VERTEX_COORD_ATTRIB, 4, GL_FLOAT, 0, 0, 0);
 	glEnableVertexAttribArray(NORMAL_ATTRIB);

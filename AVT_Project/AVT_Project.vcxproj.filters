@@ -59,5 +59,11 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Dependencies.exe" />
+    <None Include="shaders\pointlightGouraud.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\pointlightGouraud.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

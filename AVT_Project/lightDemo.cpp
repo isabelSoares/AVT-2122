@@ -14,6 +14,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
@@ -28,6 +29,7 @@
 #include "VertexAttrDef.h"
 #include "geometry.h"
 #include "objects_geometry.h"
+#include "camera.h"
 
 using namespace std;
 
@@ -51,6 +53,29 @@ MyCar car;
 
 // ======================================================================================
 
+// =================================== CAMERA OBJECTS ===================================
+
+float ratio;
+
+const int ORTHO_CAMERA_ACTIVE = 0;
+const int TOP_PERSPECTIVE_CAMERA_ACTIVE = 1;
+const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
+
+int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
+
+MyCamera orthoCamera = MyCamera(MyVec3{ 0, 0, 0 }, MyCameraType::Ortho, 39.0f, 51.0f, 10.0f);
+MyCamera topPerspectiveCamera = MyCamera(MyVec3{ 0, 10, 0 }, MyCameraType::Perspective, 0, 90, 20.0f);
+MyCamera carCamera = MyCamera(MyVec3{ 0, 3, -10 },MyCameraType::Perspective, 0, 15, 8.0f);
+
+std::vector<MyCamera*> cameras = {
+	&orthoCamera,
+	&topPerspectiveCamera,
+	&carCamera,
+};
+
+// ======================================================================================
+
+
 //External array storage defined in AVTmathLib.cpp
 
 /// The storage for matrices
@@ -65,15 +90,9 @@ GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
 	
-// Camera Position
-float camX, camY, camZ;
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
-
-// Camera Spherical Coordinates
-float alpha = 39.0f, beta = 51.0f;
-float r = 10.0f;
 
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
@@ -98,6 +117,15 @@ void refresh(int value)
 	glutTimerFunc(1000 / 60, refresh, 0);
 }
 
+void changeCameraSize() {
+
+	loadIdentity(PROJECTION);
+
+	MyCamera* currentCamera = cameras[activeCamera];
+	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
+	else { ortho(-20, 20, -20, 20); }
+}
+
 // ------------------------------------------------------------
 //
 // Reshape Callback Function
@@ -105,7 +133,6 @@ void refresh(int value)
 
 void changeSize(int w, int h) {
 
-	float ratio;
 	// Prevent a divide by zero, when window is too short
 	if(h == 0)
 		h = 1;
@@ -113,8 +140,7 @@ void changeSize(int w, int h) {
 	glViewport(0, 0, w, h);
 	// set the projection matrix
 	ratio = (1.0f * w) / h;
-	loadIdentity(PROJECTION);
-	perspective(53.13f, ratio, 0.1f, 1000.0f);
+	changeCameraSize();
 }
 
 
@@ -133,7 +159,8 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0,0,0, 0,1,0);
+	MyCamera *currentCamera = cameras[activeCamera];
+	lookAt(currentCamera->position.x, currentCamera->position.y, currentCamera->position.z, 0,0,0, 0,1,0);
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
 
@@ -194,14 +221,28 @@ void renderScene(void) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
+	MyCamera *currentCamera = cameras[activeCamera];
 	switch(key) {
 
 		case 27:
 			glutLeaveMainLoop();
 			break;
 
+		case '1':
+			activeCamera = ORTHO_CAMERA_ACTIVE;
+			changeCameraSize();
+			break;
+		case '2':
+			activeCamera = TOP_PERSPECTIVE_CAMERA_ACTIVE;
+			changeCameraSize();
+			break;
+		case '3':
+			activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
+			changeCameraSize();
+			break;
+
 		case 'c': 
-			printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
+			printf("Camera Spherical Coordinates (%f, %f, %f)\n", currentCamera->alpha, currentCamera->beta, currentCamera->r);
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
@@ -217,7 +258,7 @@ void processKeys(unsigned char key, int xx, int yy)
 void processMouseButtons(int button, int state, int xx, int yy)
 {
 	// start tracking the mouse
-	if (state == GLUT_DOWN)  {
+	if (state == GLUT_DOWN && activeCamera == CAR_PERSPECTIVE_CAMERA_ACTIVE)  {
 		startX = xx;
 		startY = yy;
 		if (button == GLUT_LEFT_BUTTON)
@@ -227,15 +268,17 @@ void processMouseButtons(int button, int state, int xx, int yy)
 	}
 
 	//stop tracking the mouse
-	else if (state == GLUT_UP) {
+	else if (state == GLUT_UP || activeCamera != CAR_PERSPECTIVE_CAMERA_ACTIVE) {
+
+		MyCamera *currentCamera = cameras[CAR_PERSPECTIVE_CAMERA_ACTIVE];
 		if (tracking == 1) {
-			alpha -= (xx - startX);
-			beta += (yy - startY);
+			currentCamera->alpha -= (xx - startX);
+			currentCamera->beta += (yy - startY);
 		}
 		else if (tracking == 2) {
-			r += (yy - startY) * 0.01f;
-			if (r < 0.1f)
-				r = 0.1f;
+			currentCamera->r += (yy - startY) * 0.01f;
+			if (currentCamera->r < 0.1f)
+				currentCamera->r = 0.1f;
 		}
 		tracking = 0;
 	}
@@ -254,31 +297,34 @@ void processMouseMotion(int xx, int yy)
 	deltaY =    yy - startY;
 
 	// left mouse button: move camera
+	MyCamera *currentCamera = cameras[CAR_PERSPECTIVE_CAMERA_ACTIVE];
 	if (tracking == 1) {
 
 
-		alphaAux = alpha + deltaX;
-		betaAux = beta + deltaY;
+		alphaAux = currentCamera->alpha + deltaX;
+		betaAux = currentCamera->beta + deltaY;
 
 		if (betaAux > 85.0f)
 			betaAux = 85.0f;
 		else if (betaAux < -85.0f)
 			betaAux = -85.0f;
-		rAux = r;
+		rAux = currentCamera->r;
 	}
 	// right mouse button: zoom
 	else if (tracking == 2) {
 
-		alphaAux = alpha;
-		betaAux = beta;
-		rAux = r + (deltaY * 0.01f);
+		alphaAux = currentCamera->alpha;
+		betaAux = currentCamera->beta;
+		rAux = currentCamera->r + (deltaY * 0.01f);
 		if (rAux < 0.1f)
 			rAux = 0.1f;
 	}
 
-	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux *   						       sin(betaAux * 3.14f / 180.0f);
+	if (tracking != 0) {
+		currentCamera->position.x = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+		currentCamera->position.z = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+		currentCamera->position.y = rAux * sin(betaAux * 3.14f / 180.0f);
+	}
 
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();
@@ -287,13 +333,14 @@ void processMouseMotion(int xx, int yy)
 
 void mouseWheel(int wheel, int direction, int x, int y) {
 
-	r += direction * 0.1f;
-	if (r < 0.1f)
-		r = 0.1f;
+	MyCamera *currentCamera = cameras[activeCamera];
+	currentCamera->r += direction * 0.1f;
+	if (currentCamera->r < 0.1f)
+		currentCamera->r = 0.1f;
 
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
+	currentCamera->position.x = currentCamera->r * sin(currentCamera->alpha * 3.14f / 180.0f) * cos(currentCamera->beta * 3.14f / 180.0f);
+	currentCamera->position.z = currentCamera->r * cos(currentCamera->alpha * 3.14f / 180.0f) * cos(currentCamera->beta * 3.14f / 180.0f);
+	currentCamera->position.y = currentCamera->r * sin(currentCamera->beta * 3.14f / 180.0f);
 
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();
@@ -340,10 +387,12 @@ GLuint setupShaders() {
 
 void init()
 {
-	// set the camera position based on its spherical coordinates
-	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r * sin(beta * 3.14f / 180.0f);
+	for (MyCamera* camera : cameras) {
+		// set the camera position based on its spherical coordinates
+		camera->position.x = camera->r * sin(camera->alpha * 3.14f / 180.0f) * cos(camera->beta * 3.14f / 180.0f);
+		camera->position.z = camera->r * cos(camera->alpha * 3.14f / 180.0f) * cos(camera->beta * 3.14f / 180.0f);
+		camera->position.y = camera->r * sin(camera->beta * 3.14f / 180.0f);
+	}
 
 
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };

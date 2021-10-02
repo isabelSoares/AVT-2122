@@ -161,11 +161,13 @@
     <ClCompile Include="basic_geometry.cpp" />
     <ClCompile Include="lightDemo.cpp" />
     <ClCompile Include="objects_geometry.cpp" />
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
     <ClCompile Include="vsShaderLib.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h" />
+    <ClInclude Include="camera.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="objects_geometry.h" />

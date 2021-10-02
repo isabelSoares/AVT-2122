@@ -68,7 +68,7 @@ public:
 	};
 
 	/// Just a helper define
-	static const int MAX_TEXTURES = 8;
+	//static const int MAX_TEXTURES = 8;
 
 	VSShaderLib();
 	~VSShaderLib();

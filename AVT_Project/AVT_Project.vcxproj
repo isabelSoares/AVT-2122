@@ -160,6 +160,7 @@
     <ClCompile Include="AVTmathLib.cpp" />
     <ClCompile Include="basic_geometry.cpp" />
     <ClCompile Include="lightDemo.cpp" />
+    <ClCompile Include="objects_geometry.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
     <ClCompile Include="vsShaderLib.cpp" />
   </ItemGroup>
@@ -167,6 +168,7 @@
     <ClInclude Include="AVTmathLib.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="geometry.h" />
+    <ClInclude Include="objects_geometry.h" />
     <ClInclude Include="Texture_Loader.h" />
     <ClInclude Include="VertexAttrDef.h" />
     <ClInclude Include="vsShaderLib.h" />

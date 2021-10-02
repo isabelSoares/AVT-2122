@@ -27,6 +27,7 @@
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
 #include "geometry.h"
+#include "objects_geometry.h"
 
 using namespace std;
 
@@ -38,15 +39,17 @@ unsigned int FrameCount = 0;
 
 VSShaderLib shader;
 
-struct MyPosition {
-	float x;
-	float y;
-	float z;
-};
-
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
-vector<struct MyPosition> myPositions;
+vector<struct MyVec3> myPositions;
+
+// =================================== RENDER OBJECTS ===================================
+
+MyTable table;
+MyRoad road;
+MyCar car;
+
+// ======================================================================================
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -136,12 +139,13 @@ void renderScene(void) {
 
 	//send the light position in eye coordinates
 
-		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
-		float res[4];
-		multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
-		glUniform4fv(lPos_uniformId, 1, res);
+	float res[4];
+	multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
 
+	/*
 	for (int objId = 0; objId < myMeshes.size(); objId++) {
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -174,6 +178,11 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 	}
+	*/
+
+	table.render(shader);
+	road.render(shader);
+	car.render(shader);
 
 	glutSwapBuffers();
 }
@@ -334,14 +343,14 @@ void init()
 	// set the camera position based on its spherical coordinates
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
+	camY = r * sin(beta * 3.14f / 180.0f);
 
-	
-	float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
-	float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
-	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
-	float shininess= 100.0f;
+
+	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+	float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
+	float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
 	int texcount = 0;
 
 	MyMesh amesh;
@@ -355,9 +364,9 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	myPositions.push_back(MyPosition{ 0, 0, 0 });
+	myPositions.push_back(MyVec3{ 0, 0, 0 });
 
-	
+
 	// create geometry and VAO of the sphere
 	amesh = createSphere(1.0f, 20);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -367,12 +376,12 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	myPositions.push_back(MyPosition{ 2, 0, 0 });
+	myPositions.push_back(MyVec3{ 2, 0, 0 });
 
-	float amb1[]= {0.3f, 0.0f, 0.0f, 1.0f};
-	float diff1[] = {0.8f, 0.1f, 0.1f, 1.0f};
-	float spec1[] = {0.9f, 0.9f, 0.9f, 1.0f};
-	shininess=500.0;
+	float amb1[] = { 0.3f, 0.0f, 0.0f, 1.0f };
+	float diff1[] = { 0.8f, 0.1f, 0.1f, 1.0f };
+	float spec1[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+	shininess = 500.0;
 
 	// create geometry and VAO of the cylinder
 	amesh = createCylinder(1.5f, 0.5f, 20);
@@ -383,7 +392,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	myPositions.push_back(MyPosition{ 4, 0, 0 });
+	myPositions.push_back(MyVec3{ 4, 0, 0 });
 
 	// create geometry and VAO of the 
 	amesh = createCone(1.5f, 0.5f, 20);
@@ -394,7 +403,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	myPositions.push_back(MyPosition{ 6, 0, 0 });
+	myPositions.push_back(MyVec3{ 6, 0, 0 });
 
 	// create geometry and VAO of the 
 	amesh = createCube();
@@ -405,7 +414,11 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	myPositions.push_back(MyPosition{ 2, 0, 2 });
+	myPositions.push_back(MyVec3{ 2, 0, 2 });
+
+	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{20, 0.2, 20});
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, 20.2 });
+	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 });
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

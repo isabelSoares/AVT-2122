@@ -259,6 +259,7 @@ void MyCar::turnLeft() {
 	double angleDegrees = angleRadians * 180 / O_PI;
 
 	angleDegrees -= ANGLE_ROTATION;
+	if (angleDegrees >= 315) { angleDegrees = 315; }
 
 	direction.x = float(cos(angleDegrees));
 	direction.z = float(sin(angleDegrees));
@@ -272,6 +273,7 @@ void MyCar::turnRight() {
 	double angleDegrees = angleRadians * 180 / O_PI;
 
 	angleDegrees += ANGLE_ROTATION;
+	if (angleDegrees <= 225) { angleDegrees = 225; }
 
 	direction.x = float(cos(angleDegrees));
 	direction.z = float(sin(angleDegrees));

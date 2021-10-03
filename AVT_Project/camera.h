@@ -8,14 +8,20 @@ enum MyCameraType { Ortho, Perspective };
 class MyCamera {
 public:
 
-	MyVec3 position;
 	MyCameraType type;
 
+	MyVec3 position;
 	float alpha;
 	float beta;
 	float r;
 
+	MyVec3 lookAtPosition;
+	MyVec3 translation;
+
 	MyCamera();
-	MyCamera(MyVec3 positionTemp, MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp);
+	MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp);
+
+	void updateCamera();
+	void updateCameraWithAux(float alphaAux, float betaAux, float rAux);
 };
 #endif

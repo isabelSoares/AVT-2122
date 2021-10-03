@@ -1,6 +1,8 @@
 #ifndef OBJECTS_GEOMETRY_H
 #define OBJECTS_GEOMETRY_H
 
+#define O_PI       3.14159265358979323846f
+
 struct MyVec3 {
 	float x;
 	float y;
@@ -61,13 +63,30 @@ public:
 class MyCar {
 public:
 
-	// ============ Block Objects ============
+	// ============ Car Objects ===============
 	MyObject mainBlock;
 	std::vector<MyObject> wheels;
+	// ============ Car Attributes ============
+	static float START_ACCELERATION;
+	static float STOP_ACCELERATION;
+	static float FRICTION_COEFICIENT;
+	static float ANGLE_ROTATION;
+	// ============ Car Attributes ============
+	MyVec3 direction = MyVec3{ 0, 0, -1 };
+	float velocity = 0.0f;
+	float acceleration = 0.0f;
 
 	MyCar();
 	MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
 
 	void render(VSShaderLib shader);
+	MyVec3 getPosition();
+
+	void tick();
+	void forward();
+	void backward();
+	void turnLeft();
+	void turnRight();
+	void stop();
 };
 #endif

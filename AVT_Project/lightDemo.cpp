@@ -63,9 +63,9 @@ const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
 
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
-MyCamera orthoCamera = MyCamera(MyVec3{ 0, 0, 0 }, MyCameraType::Ortho, 39.0f, 51.0f, 10.0f);
-MyCamera topPerspectiveCamera = MyCamera(MyVec3{ 0, 10, 0 }, MyCameraType::Perspective, 0, 90, 20.0f);
-MyCamera carCamera = MyCamera(MyVec3{ 0, 3, -10 },MyCameraType::Perspective, 0, 15, 8.0f);
+MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 39.0f, 51.0f, 10.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 20.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0});
 
 std::vector<MyCamera*> cameras = {
 	&orthoCamera,
@@ -160,7 +160,7 @@ void renderScene(void) {
 	loadIdentity(MODEL);
 	// set the camera using a function similar to gluLookAt
 	MyCamera *currentCamera = cameras[activeCamera];
-	lookAt(currentCamera->position.x, currentCamera->position.y, currentCamera->position.z, 0,0,0, 0,1,0);
+	lookAt(currentCamera->position.x, currentCamera->position.y, currentCamera->position.z, currentCamera->lookAtPosition.x, currentCamera->lookAtPosition.y, currentCamera->lookAtPosition.z, 0,1,0);
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
 
@@ -211,6 +211,17 @@ void renderScene(void) {
 	road.render(shader);
 	car.render(shader);
 
+	car.tick();
+	car.stop();
+
+	// Update Car Camera
+	MyVec3 carPosition = car.getPosition();
+	carCamera.translation.x = carPosition.x;
+	carCamera.translation.y = carPosition.y;
+	carCamera.translation.z = carPosition.z;
+	carCamera.lookAtPosition = carPosition;
+	currentCamera->updateCamera();
+
 	glutSwapBuffers();
 }
 
@@ -221,6 +232,7 @@ void renderScene(void) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
+
 	MyCamera *currentCamera = cameras[activeCamera];
 	switch(key) {
 
@@ -240,6 +252,25 @@ void processKeys(unsigned char key, int xx, int yy)
 			activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 			changeCameraSize();
 			break;
+
+		// ================= CAR STUFF =================
+		case 'O':
+		case 'o':
+			car.turnLeft();
+			break;
+		case 'P':
+		case 'p':
+			car.turnRight();
+			break;
+		case 'A':
+		case 'a':
+			car.backward();
+			break;
+		case 'Q':
+		case 'q':
+			car.forward();
+			break;
+		// ==============================================
 
 		case 'c': 
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", currentCamera->alpha, currentCamera->beta, currentCamera->r);
@@ -270,6 +301,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 	//stop tracking the mouse
 	else if (state == GLUT_UP || activeCamera != CAR_PERSPECTIVE_CAMERA_ACTIVE) {
 
+		/*
 		MyCamera *currentCamera = cameras[CAR_PERSPECTIVE_CAMERA_ACTIVE];
 		if (tracking == 1) {
 			currentCamera->alpha -= (xx - startX);
@@ -280,6 +312,7 @@ void processMouseButtons(int button, int state, int xx, int yy)
 			if (currentCamera->r < 0.1f)
 				currentCamera->r = 0.1f;
 		}
+		*/
 		tracking = 0;
 	}
 }
@@ -321,9 +354,10 @@ void processMouseMotion(int xx, int yy)
 	}
 
 	if (tracking != 0) {
-		currentCamera->position.x = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-		currentCamera->position.z = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-		currentCamera->position.y = rAux * sin(betaAux * 3.14f / 180.0f);
+		currentCamera->alpha = alphaAux;
+		currentCamera->beta = betaAux;
+		currentCamera->r = rAux;
+		currentCamera->updateCamera();
 	}
 
 //  uncomment this if not using an idle or refresh func
@@ -338,9 +372,7 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 	if (currentCamera->r < 0.1f)
 		currentCamera->r = 0.1f;
 
-	currentCamera->position.x = currentCamera->r * sin(currentCamera->alpha * 3.14f / 180.0f) * cos(currentCamera->beta * 3.14f / 180.0f);
-	currentCamera->position.z = currentCamera->r * cos(currentCamera->alpha * 3.14f / 180.0f) * cos(currentCamera->beta * 3.14f / 180.0f);
-	currentCamera->position.y = currentCamera->r * sin(currentCamera->beta * 3.14f / 180.0f);
+	currentCamera->updateCamera();
 
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();

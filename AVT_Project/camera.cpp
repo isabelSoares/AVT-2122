@@ -16,12 +16,25 @@
 
 #include "camera.h"
 
-MyCamera::MyCamera(MyVec3 positionTemp, MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp) {
+MyCamera::MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp) {
 
-	position = positionTemp;
+	position = MyVec3 { 0, 0, 0 };
 	type = typeTemp;
 
 	alpha = alphaTemp;
 	beta = betaTemp;
 	r = rTemp;
+
+	translation = translationTemp;
+	lookAtPosition = lookAtPositionTemp;
+};
+
+void MyCamera::updateCamera() {
+	updateCameraWithAux(alpha, beta, r);
+};
+
+void MyCamera::updateCameraWithAux(float alphaAux, float betaAux, float rAux) {
+	position.x = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + translation.x;
+	position.z = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + translation.z;
+	position.y = rAux * sin(betaAux * 3.14f / 180.0f) + translation.y;
 };

@@ -155,10 +155,11 @@ void MyRoad::render(VSShaderLib shader) {
 	rightMargin.render(shader);
 }
 
+float MyCar::MAX_VELOCITY = 5.0f;
 float MyCar::START_ACCELERATION = 0.01f;
 float MyCar::STOP_ACCELERATION = 0.0f;
-float MyCar::FRICTION_COEFICIENT = 0.05f;
-float MyCar::ANGLE_ROTATION = 0.42f;
+float MyCar::FRICTION_COEFICIENT = 0.025f;
+float MyCar::ANGLE_ROTATION_VELOCITY = 0.42f;
 
 MyCar::MyCar() {}
 MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
@@ -217,6 +218,7 @@ MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 }
 
 void MyCar::render(VSShaderLib shader) {
+
 	mainBlock.render(shader);
 	for (MyObject wheel : wheels) { wheel.render(shader); }
 	
@@ -229,7 +231,26 @@ MyVec3 MyCar::getPosition() {
 void MyCar::tick() {
 
 	// Update velocity
-	velocity = velocity + acceleration - FRICTION_COEFICIENT * velocity;
+	velocity = velocity + acceleration;
+	if (velocity >= MAX_VELOCITY) velocity = MAX_VELOCITY;
+	else if (velocity <= -MAX_VELOCITY) velocity = -MAX_VELOCITY;
+	velocity -= FRICTION_COEFICIENT * velocity;
+
+	// Update rotation
+	int rotationSignal = (signbit(rotationVelocity)) ? -1 : 1;
+	float velocityFactor = abs(velocity) / MAX_VELOCITY;
+	rotationVelocity -= FRICTION_COEFICIENT * float(rotationSignal) * velocityFactor;
+	rotationWheelAngle += rotationVelocity;
+
+	// Update direction
+	double angleRadians = atan2(direction.z, direction.x);
+	double angleDegrees = angleRadians * 180 / O_PI;
+
+	angleDegrees += rotationWheelAngle * velocity;
+
+	direction.x = float(cos(angleDegrees / (180 / O_PI)));
+	direction.z = float(sin(angleDegrees / (180 / O_PI)));
+
 	// Update positions
 	mainBlock.positionVec.x += velocity * direction.x;
 	mainBlock.positionVec.y += velocity * direction.y;
@@ -240,6 +261,9 @@ void MyCar::tick() {
 		wheel.positionVec.y += velocity * direction.y;
 		wheel.positionVec.z += velocity * direction.z;
 	}
+
+	// Update rotations
+	mainBlock.rotateVec = MyVec3Rotation{ - float(angleDegrees) - 90 , 0, 1, 0 };
 }
 
 void MyCar::forward() {
@@ -255,27 +279,9 @@ void MyCar::stop() {
 }
 
 void MyCar::turnLeft() {
-	double angleRadians = atan2(direction.z, direction.x);
-	double angleDegrees = angleRadians * 180 / O_PI;
-
-	angleDegrees -= ANGLE_ROTATION;
-
-	direction.x = float(cos(angleDegrees));
-	direction.z = float(sin(angleDegrees));
-
-	// Update Car Visual Direction
-	mainBlock.rotateVec = MyVec3Rotation{ float(angleDegrees) + 90 , 0, 1, 0 };
+	rotationVelocity = - ANGLE_ROTATION_VELOCITY;
 }
 
 void MyCar::turnRight() {
-	double angleRadians = atan2(direction.z, direction.x);
-	double angleDegrees = angleRadians * 180 / O_PI;
-
-	angleDegrees += ANGLE_ROTATION;
-
-	direction.x = float(cos(angleDegrees));
-	direction.z = float(sin(angleDegrees));
-
-	// Update Car Visual Direction
-	mainBlock.rotateVec = MyVec3Rotation{ float(angleDegrees) + 90 , 0, 1, 0 };
+	rotationVelocity = ANGLE_ROTATION_VELOCITY;
 }

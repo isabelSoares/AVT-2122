@@ -63,12 +63,12 @@ const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
 
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
-MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 39.0f, 51.0f, 10.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 5, 0 }, MyVec3{ 0, 0, 0 });
 MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 20.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
 MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0});
 
 std::vector<MyCamera*> cameras = {
-	&orthoCamera,
+	&orthoCamera ,
 	&topPerspectiveCamera,
 	&carCamera,
 };
@@ -114,7 +114,7 @@ void refresh(int value)
 {
 
 	glutPostRedisplay();
-	glutTimerFunc(1000 / 60, refresh, 0);
+	glutTimerFunc(1000 / 30, refresh, 0);
 }
 
 void changeCameraSize() {
@@ -123,7 +123,7 @@ void changeCameraSize() {
 
 	MyCamera* currentCamera = cameras[activeCamera];
 	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
-	else { ortho(-20, 20, -20, 20); }
+	else { ortho(-20, 20, -20, 20, -20, 20); }
 }
 
 // ------------------------------------------------------------

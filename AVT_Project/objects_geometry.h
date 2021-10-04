@@ -67,14 +67,17 @@ public:
 	MyObject mainBlock;
 	std::vector<MyObject> wheels;
 	// ============ Car Attributes ============
+	static float MAX_VELOCITY;
 	static float START_ACCELERATION;
 	static float STOP_ACCELERATION;
 	static float FRICTION_COEFICIENT;
-	static float ANGLE_ROTATION;
+	static float ANGLE_ROTATION_VELOCITY;
 	// ============ Car Attributes ============
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 	float velocity = 0.0f;
 	float acceleration = 0.0f;
+	float rotationVelocity = 0.0f;
+	float rotationWheelAngle = 0.0f;
 
 	MyCar();
 	MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);

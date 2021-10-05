@@ -50,6 +50,8 @@ vector<struct MyVec3> myPositions;
 MyTable table;
 MyRoad road;
 MyCar car;
+std::vector<MyOrange> oranges;
+MyPacketButter butter;
 
 // ======================================================================================
 
@@ -75,6 +77,12 @@ std::vector<MyCamera*> cameras = {
 
 // ======================================================================================
 
+// =================================== OTHER CONSTANTS ==================================
+const int FPS = 60;
+const float ORTHO_FRUSTUM_HEIGHT = 20.0f;
+
+const int NUMBER_ORANGES = 75;
+// ======================================================================================
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -114,7 +122,7 @@ void refresh(int value)
 {
 
 	glutPostRedisplay();
-	glutTimerFunc(1000 / 30, refresh, 0);
+	glutTimerFunc(1000 / FPS, refresh, 0);
 }
 
 void changeCameraSize() {
@@ -123,7 +131,7 @@ void changeCameraSize() {
 
 	MyCamera* currentCamera = cameras[activeCamera];
 	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
-	else { ortho(-20, 20, -20, 20, -20, 20); }
+	else { ortho(-ORTHO_FRUSTUM_HEIGHT * ratio, ORTHO_FRUSTUM_HEIGHT * ratio, -ORTHO_FRUSTUM_HEIGHT, ORTHO_FRUSTUM_HEIGHT, -20, 20); }
 }
 
 // ------------------------------------------------------------
@@ -210,9 +218,11 @@ void renderScene(void) {
 	table.render(shader);
 	road.render(shader);
 	car.render(shader);
+	for (MyOrange& orange : oranges) { orange.render(shader); }
+	butter.render(shader);
 
 	car.tick();
-	car.stop();
+	for (MyOrange& orange : oranges) { orange.tick(); }
 
 	// Update Car Camera
 	MyVec3 carPosition = car.getPosition();
@@ -232,7 +242,6 @@ void renderScene(void) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
-
 	MyCamera *currentCamera = cameras[activeCamera];
 	switch(key) {
 
@@ -277,6 +286,32 @@ void processKeys(unsigned char key, int xx, int yy)
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+	}
+}
+
+void processKeysUp(unsigned char key, int xx, int yy)
+{
+	MyCamera* currentCamera = cameras[activeCamera];
+	switch (key) {
+
+		// ================= CAR STUFF =================
+	case 'O':
+	case 'o':
+		car.turnLeft();
+		break;
+	case 'P':
+	case 'p':
+		car.turnRight();
+		break;
+	case 'A':
+	case 'a':
+		car.stop();
+		break;
+	case 'Q':
+	case 'q':
+		car.stop();
+		break;
+		// ==============================================
 	}
 }
 
@@ -333,7 +368,6 @@ void processMouseMotion(int xx, int yy)
 	MyCamera *currentCamera = cameras[CAR_PERSPECTIVE_CAMERA_ACTIVE];
 	if (tracking == 1) {
 
-
 		alphaAux = currentCamera->alpha + deltaX;
 		betaAux = currentCamera->beta + deltaY;
 
@@ -358,6 +392,10 @@ void processMouseMotion(int xx, int yy)
 		currentCamera->beta = betaAux;
 		currentCamera->r = rAux;
 		currentCamera->updateCamera();
+
+		// Reset Values
+		startX = xx;
+		startY = yy;
 	}
 
 //  uncomment this if not using an idle or refresh func
@@ -367,12 +405,14 @@ void processMouseMotion(int xx, int yy)
 
 void mouseWheel(int wheel, int direction, int x, int y) {
 
-	MyCamera *currentCamera = cameras[activeCamera];
-	currentCamera->r += direction * 0.1f;
-	if (currentCamera->r < 0.1f)
-		currentCamera->r = 0.1f;
+	if (activeCamera == CAR_PERSPECTIVE_CAMERA_ACTIVE) {
+		MyCamera *currentCamera = cameras[activeCamera];
+		currentCamera->r += direction * 0.1f;
+		if (currentCamera->r < 0.1f)
+			currentCamera->r = 0.1f;
 
-	currentCamera->updateCamera();
+		currentCamera->updateCamera();
+	}
 
 //  uncomment this if not using an idle or refresh func
 //	glutPostRedisplay();
@@ -497,9 +537,16 @@ void init()
 	myMeshes.push_back(amesh);
 	myPositions.push_back(MyVec3{ 2, 0, 2 });
 
-	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{20, 0.2, 20});
-	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, 20.2 });
+	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{500, 0.2, 500});
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, 500.2 });
 	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 });
+	oranges = {};
+	for (int i = 0; i < NUMBER_ORANGES; i++) {
+		float orangeX = rand() % 800 - 400;
+		float orangeY = rand() % 800 - 400;
+		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }));
+	}
+	butter = MyPacketButter(MyVec3{ 5.0f, 0.2f, 5.0f }, MyVec3{1.0f, 0.4f, 0.5f});
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
@@ -541,6 +588,7 @@ int main(int argc, char **argv) {
 
 //	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
+	glutKeyboardUpFunc(processKeysUp);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc ( mouseWheel ) ;

@@ -22,14 +22,14 @@ public:
 	MyMesh mesh;
 	MyVec3 positionVec;
 	MyVec3 scaleVec;
-	MyVec3Rotation rotateVec;
+	std::vector<MyVec3Rotation> rotateVec;
 
 
 	// Display
 	VSShaderLib shader;
 
 	MyObject();
-	MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, MyVec3Rotation rotateVec);
+	MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateVec);
 
 	void render(VSShaderLib shader);
 };
@@ -72,6 +72,8 @@ public:
 	static float STOP_ACCELERATION;
 	static float FRICTION_COEFICIENT;
 	static float ANGLE_ROTATION_VELOCITY;
+	static float MAX_WHEEL_ANGLE;
+	static float FRICTION_ROTATION_COEFICIENT;
 	// ============ Car Attributes ============
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 	float velocity = 0.0f;
@@ -91,5 +93,35 @@ public:
 	void turnLeft();
 	void turnRight();
 	void stop();
+};
+
+class MyOrange {
+public:
+	// ============ Orange Objects ===============
+	MyObject orange;
+	// ============ Orange Attributes ============
+	static float MAX_VELOCITY;
+	static float ANGLE_ROTATION_VELOCITY;
+	// ============ Orange Attributes ============
+	MyVec3 direction = MyVec3{ 0, 0, -1 };
+	float velocity = 0.0f;
+
+	MyOrange();
+	MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+
+	void render(VSShaderLib shader);
+
+	void tick();
+};
+
+class MyPacketButter {
+public:
+	// ============ Butter Packet Objects ===============
+	MyObject butter;
+
+	MyPacketButter();
+	MyPacketButter(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+
+	void render(VSShaderLib shader);
 };
 #endif

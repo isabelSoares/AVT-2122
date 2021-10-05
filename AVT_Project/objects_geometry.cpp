@@ -20,7 +20,7 @@ extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 extern float mNormal3x3[9];
 
 MyObject::MyObject() {}
-MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, MyVec3Rotation rotateTemp) {
+MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateTemp) {
 	mesh = meshTemp;
 	positionVec = positionTemp;
 	scaleVec = scaleTemp;
@@ -43,7 +43,7 @@ void MyObject::render(VSShaderLib shader) {
 	pushMatrix(MODEL);
 	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
 	scale(MODEL, scaleVec.x, scaleVec.y, scaleVec.z);
-	rotate(MODEL, rotateVec.angle, rotateVec.x, rotateVec.y, rotateVec.z);
+	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z);  }
 
 	GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
@@ -89,7 +89,7 @@ MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	tableTopMesh.mat.shininess = shininess;
 	tableTopMesh.mat.texCount = texcount;
 
-	tableTop = MyObject(tableTopMesh, initialPositionTemp, initialScaleTemp, MyVec3Rotation{ 0, 1, 1, 1 });
+	tableTop = MyObject(tableTopMesh, initialPositionTemp, initialScaleTemp, {});
 }
 
 void MyTable::render(VSShaderLib shader) {
@@ -115,7 +115,7 @@ MyRoad::MyRoad(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	mainRoadMesh.mat.shininess = shininessRoad;
 	mainRoadMesh.mat.texCount = texcountRoad;
 
-	mainRoad = MyObject(mainRoadMesh, initialPositionTemp, initialScaleTemp, MyVec3Rotation{ 0, 1, 1, 1 });
+	mainRoad = MyObject(mainRoadMesh, initialPositionTemp, initialScaleTemp, {});
 
 	MyMesh leftMarginMesh = createCube();
 	MyMesh rightMarginMesh = createCube();
@@ -145,8 +145,8 @@ MyRoad::MyRoad(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	MyVec3 rightMarginPosition = MyVec3{ initialPositionTemp.x + float(2), initialPositionTemp.y, initialPositionTemp.z };
 	MyVec3 marginScale = MyVec3{ initialScaleTemp.x / 5, initialScaleTemp.y + float(0.5), initialScaleTemp.z + float(0.02) };
 
-	leftMargin = MyObject(leftMarginMesh, leftMarginPosition, marginScale, MyVec3Rotation{ 0, 1, 1, 1 });
-	rightMargin = MyObject(rightMarginMesh, rightMarginPosition, marginScale, MyVec3Rotation{ 0, 1, 1, 1 });
+	leftMargin = MyObject(leftMarginMesh, leftMarginPosition, marginScale, {});
+	rightMargin = MyObject(rightMarginMesh, rightMarginPosition, marginScale, {});
 }
 
 void MyRoad::render(VSShaderLib shader) {
@@ -155,11 +155,13 @@ void MyRoad::render(VSShaderLib shader) {
 	rightMargin.render(shader);
 }
 
-float MyCar::MAX_VELOCITY = 5.0f;
+float MyCar::MAX_VELOCITY = 1.5f;
 float MyCar::START_ACCELERATION = 0.01f;
 float MyCar::STOP_ACCELERATION = 0.0f;
-float MyCar::FRICTION_COEFICIENT = 0.025f;
-float MyCar::ANGLE_ROTATION_VELOCITY = 0.42f;
+float MyCar::FRICTION_COEFICIENT = 0.0055f;
+float MyCar::ANGLE_ROTATION_VELOCITY = 2.0f;
+float MyCar::MAX_WHEEL_ANGLE = 3.0f;
+float MyCar::FRICTION_ROTATION_COEFICIENT = 0.055f;
 
 MyCar::MyCar() {}
 MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
@@ -180,7 +182,7 @@ MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	mainBlockMesh.mat.shininess = shininessBlock;
 	mainBlockMesh.mat.texCount = texcountBlock;
 
-	mainBlock = MyObject(mainBlockMesh, initialPositionTemp, initialScaleTemp, MyVec3Rotation{ 0, 1, 1, 1 });
+	mainBlock = MyObject(mainBlockMesh, initialPositionTemp, initialScaleTemp, {});
 
 	float ambWheel[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float diffWheel[] = { 0.6f, 0.1f, 0.3f, 1.0f };
@@ -212,7 +214,7 @@ MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 		MyVec3 wheelScale = MyVec3{ initialScaleTemp.x / 3, initialScaleTemp.y / 4, initialScaleTemp.x / 3 };
 		MyVec3Rotation wheelRotation = MyVec3Rotation{ 90, 0, 0, 1 };
 
-		MyObject wheel = MyObject(wheelMesh, wheelPosition, wheelScale, wheelRotation);
+		MyObject wheel = MyObject(wheelMesh, wheelPosition, wheelScale, { wheelRotation });
 		wheels.push_back(wheel);
 	}
 }
@@ -234,19 +236,27 @@ void MyCar::tick() {
 	velocity = velocity + acceleration;
 	if (velocity >= MAX_VELOCITY) velocity = MAX_VELOCITY;
 	else if (velocity <= -MAX_VELOCITY) velocity = -MAX_VELOCITY;
-	velocity -= FRICTION_COEFICIENT * velocity;
+
+	if (velocity > 0) velocity = std::max(velocity - FRICTION_COEFICIENT, 0.0f);
+	else if (velocity < 0) velocity = std::min(velocity + FRICTION_COEFICIENT, 0.0f);
 
 	// Update rotation
-	int rotationSignal = (signbit(rotationVelocity)) ? -1 : 1;
 	float velocityFactor = abs(velocity) / MAX_VELOCITY;
-	rotationVelocity -= FRICTION_COEFICIENT * float(rotationSignal) * velocityFactor;
-	rotationWheelAngle += rotationVelocity;
+	int rotationSignal = (signbit(rotationVelocity)) ? -1 : 1;
+	if (rotationVelocity == 0.0f) { rotationSignal = 0; }
+
+	if (rotationVelocity > 0) rotationVelocity = std::max(rotationVelocity - FRICTION_ROTATION_COEFICIENT, 0.0f);
+	else if (rotationVelocity < 0) rotationVelocity = std::min(rotationVelocity + FRICTION_ROTATION_COEFICIENT, 0.0f);
+	
+	rotationWheelAngle = rotationVelocity * velocityFactor;
+	if (rotationWheelAngle >= MAX_WHEEL_ANGLE) { rotationWheelAngle = MAX_WHEEL_ANGLE;  }
+	else if (rotationWheelAngle <= - MAX_WHEEL_ANGLE) { rotationWheelAngle = - MAX_WHEEL_ANGLE; }
 
 	// Update direction
 	double angleRadians = atan2(direction.z, direction.x);
 	double angleDegrees = angleRadians * 180 / O_PI;
 
-	angleDegrees += rotationWheelAngle * velocity;
+	angleDegrees += rotationWheelAngle;
 
 	direction.x = float(cos(angleDegrees / (180 / O_PI)));
 	direction.z = float(sin(angleDegrees / (180 / O_PI)));
@@ -263,7 +273,12 @@ void MyCar::tick() {
 	}
 
 	// Update rotations
-	mainBlock.rotateVec = MyVec3Rotation{ - float(angleDegrees) - 90 , 0, 1, 0 };
+	mainBlock.rotateVec = { MyVec3Rotation{ -float(angleDegrees) - 90 , 0, 1, 0 } };
+	MyVec3Rotation wheelStandardRotation = MyVec3Rotation{ 90, 0, 0, 1 };
+	MyVec3Rotation wheelDriveRotation = MyVec3Rotation{ -float(angleDegrees) - 90, 1, 0, 0 };
+	for (MyObject& wheel : wheels) {
+		wheel.rotateVec = { wheelStandardRotation, wheelDriveRotation };
+	}
 }
 
 void MyCar::forward() {
@@ -284,4 +299,63 @@ void MyCar::turnLeft() {
 
 void MyCar::turnRight() {
 	rotationVelocity = ANGLE_ROTATION_VELOCITY;
+}
+
+float MyOrange::MAX_VELOCITY = 1.5f;
+float MyOrange::ANGLE_ROTATION_VELOCITY = 2.0f;
+
+MyOrange::MyOrange() {}
+MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+
+	MyMesh orangeMesh = createSphere(2.0, 20);
+
+	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
+	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
+	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
+	int texcount = 0;
+
+	memcpy(orangeMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(orangeMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(orangeMesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(orangeMesh.mat.emissive, emissive, 4 * sizeof(float));
+	orangeMesh.mat.shininess = shininess;
+	orangeMesh.mat.texCount = texcount;
+
+	orange = MyObject(orangeMesh, initialPositionTemp, initialScaleTemp, {});
+}
+
+void MyOrange::render(VSShaderLib shader) {
+	orange.render(shader);
+}
+
+void MyOrange::tick() {
+
+}
+
+MyPacketButter::MyPacketButter() {}
+MyPacketButter::MyPacketButter(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+
+	MyMesh butterMesh = createCube();
+
+	float amb[] = { 1.0f, 1.0f, 0.2f, 1.0f };
+	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
+	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
+	int texcount = 0;
+
+	memcpy(butterMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(butterMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(butterMesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(butterMesh.mat.emissive, emissive, 4 * sizeof(float));
+	butterMesh.mat.shininess = shininess;
+	butterMesh.mat.texCount = texcount;
+
+	butter = MyObject(butterMesh, initialPositionTemp, initialScaleTemp, {});
+}
+
+void MyPacketButter::render(VSShaderLib shader) {
+	butter.render(shader);
 }

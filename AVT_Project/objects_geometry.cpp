@@ -301,11 +301,10 @@ void MyCar::turnRight() {
 	rotationVelocity = ANGLE_ROTATION_VELOCITY;
 }
 
-float MyOrange::MAX_VELOCITY = 1.5f;
 float MyOrange::ANGLE_ROTATION_VELOCITY = 2.0f;
 
 MyOrange::MyOrange() {}
-MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float maxVelocity) {
 
 	MyMesh orangeMesh = createSphere(2.0, 20);
 
@@ -323,6 +322,16 @@ MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	orangeMesh.mat.shininess = shininess;
 	orangeMesh.mat.texCount = texcount;
 
+	// Set Parameters
+	double angleDegrees = rand() % 360;
+	direction.x = float(cos(angleDegrees / (180 / O_PI)));
+	direction.y = 0;
+	direction.z = float(sin(angleDegrees / (180 / O_PI)));
+
+	float randomFloat = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	velocity = (randomFloat * 0.8 + 0.2) * maxVelocity;
+
+
 	orange = MyObject(orangeMesh, initialPositionTemp, initialScaleTemp, {});
 }
 
@@ -330,8 +339,16 @@ void MyOrange::render(VSShaderLib shader) {
 	orange.render(shader);
 }
 
+MyVec3 MyOrange::getPosition() {
+	return orange.positionVec;
+}
+
 void MyOrange::tick() {
 
+	// Update positions
+	orange.positionVec.x += velocity * direction.x;
+	orange.positionVec.y += velocity * direction.y;
+	orange.positionVec.z += velocity * direction.z;
 }
 
 MyPacketButter::MyPacketButter() {}

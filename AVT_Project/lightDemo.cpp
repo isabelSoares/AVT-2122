@@ -77,11 +77,17 @@ std::vector<MyCamera*> cameras = {
 
 // ======================================================================================
 
+// =================================== OTHER OBJECTS ===================================
+int gameTime = 0;
+// =====================================================================================
+
 // =================================== OTHER CONSTANTS ==================================
 const int FPS = 60;
-const float ORTHO_FRUSTUM_HEIGHT = 20.0f;
 
+const int TABLE_SIZE = 500;
 const int NUMBER_ORANGES = 75;
+
+const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
 // ======================================================================================
 
 //External array storage defined in AVTmathLib.cpp
@@ -116,6 +122,9 @@ void timer(int value)
 	glutSetWindowTitle(s.c_str());
     FrameCount = 0;
     glutTimerFunc(1000, timer, 0);
+
+	// Update GameTime
+	gameTime = gameTime + 1;
 }
 
 void refresh(int value)
@@ -176,44 +185,26 @@ void renderScene(void) {
 
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
-	float res[4];
-	multMatrixPoint(VIEW, lightPos,res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
-
 	/*
-	for (int objId = 0; objId < myMeshes.size(); objId++) {
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		pushMatrix(MODEL);
-		translate(MODEL, myPositions[objId].x, myPositions[objId].y, myPositions[objId].z);
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-			
-		if (!shader.isProgramValid()) {
-			printf("Program Not Valid!\n");
-			exit(1);	
-		}
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-	}
+	float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
 	*/
+
+	// ================================ Check Position Car ================================
+	for (int i = 0; i < NUMBER_ORANGES; i++) {
+
+		MyVec3 currentPosition = oranges[i].getPosition();
+		if (abs(currentPosition.x) > TABLE_SIZE / 2 || abs(currentPosition.z) > TABLE_SIZE / 2) {
+
+			float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
+			float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
+			oranges[i] = MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 30 + 1));
+		}
+	}
+	
+
+	// ====================================================================================
 
 	table.render(shader);
 	road.render(shader);
@@ -466,85 +457,14 @@ void init()
 		camera->position.y = camera->r * sin(camera->beta * 3.14f / 180.0f);
 	}
 
-
-	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
-	float diff[] = { 0.8f, 0.6f, 0.4f, 1.0f };
-	float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 100.0f;
-	int texcount = 0;
-
-	MyMesh amesh;
-
-	// create geometry and VAO of the pawn
-	amesh = createPawn();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	myPositions.push_back(MyVec3{ 0, 0, 0 });
-
-
-	// create geometry and VAO of the sphere
-	amesh = createSphere(1.0f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	myPositions.push_back(MyVec3{ 2, 0, 0 });
-
-	float amb1[] = { 0.3f, 0.0f, 0.0f, 1.0f };
-	float diff1[] = { 0.8f, 0.1f, 0.1f, 1.0f };
-	float spec1[] = { 0.9f, 0.9f, 0.9f, 1.0f };
-	shininess = 500.0;
-
-	// create geometry and VAO of the cylinder
-	amesh = createCylinder(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb1, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff1, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec1, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	myPositions.push_back(MyVec3{ 4, 0, 0 });
-
-	// create geometry and VAO of the 
-	amesh = createCone(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	myPositions.push_back(MyVec3{ 6, 0, 0 });
-
-	// create geometry and VAO of the 
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	myPositions.push_back(MyVec3{ 2, 0, 2 });
-
-	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{500, 0.2, 500});
-	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, 500.2 });
+	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, TABLE_SIZE + 0.2 });
 	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 });
 	oranges = {};
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
-		float orangeX = rand() % 800 - 400;
-		float orangeY = rand() % 800 - 400;
-		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }));
+		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
+		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
+		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 30 + 1)));
 	}
 	butter = MyPacketButter(MyVec3{ 5.0f, 0.2f, 5.0f }, MyVec3{1.0f, 0.4f, 0.5f});
 

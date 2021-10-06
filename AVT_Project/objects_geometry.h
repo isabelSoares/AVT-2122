@@ -100,16 +100,16 @@ public:
 	// ============ Orange Objects ===============
 	MyObject orange;
 	// ============ Orange Attributes ============
-	static float MAX_VELOCITY;
 	static float ANGLE_ROTATION_VELOCITY;
 	// ============ Orange Attributes ============
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 	float velocity = 0.0f;
 
 	MyOrange();
-	MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+	MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float maxVelocity);
 
 	void render(VSShaderLib shader);
+	MyVec3 getPosition();
 
 	void tick();
 };

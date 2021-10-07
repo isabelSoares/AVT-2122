@@ -4,7 +4,7 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
-uniform vec4 l_pos;
+uniform vec4 l_positions[2];
 
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria
@@ -27,26 +27,38 @@ void main () {
 	vec4 pos = m_viewModel * position;
 
 	vec3 normalGouraud = normalize(m_normal * normal.xyz);
-	vec3 lightDir = vec3(l_pos - pos);
-	vec3 eye = vec3(-pos);
 
-	gl_Position = m_pvm * position;
+	vec4 finalLightsColor = vec4(0.0);
 
-	vec4 spec = vec4(0.0);
+	for (int lightIndex = 0 ; lightIndex < l_positions.length() ; lightIndex++ ) {
 
-	vec3 n = normalize(normalGouraud);
-	vec3 l = normalize(lightDir);
-	vec3 e = normalize(eye);
+		vec4 l_pos = l_positions[lightIndex];
+		
+		vec3 lightDir = vec3(l_pos - pos);
+		vec3 eye = vec3(-pos);
 
-	float intensity = max(dot(n,l), 0.0);
+		gl_Position = m_pvm * position;
+
+		vec4 spec = vec4(0.0);
+
+		vec3 n = normalize(normalGouraud);
+		vec3 l = normalize(lightDir);
+		vec3 e = normalize(eye);
+
+		float intensity = max(dot(n,l), 0.0);
 	
-	if (intensity > 0.0) {
+		if (intensity > 0.0) {
 
-		vec3 h = normalize(l + e);
-		float intSpec = max(dot(h,n), 0.0);
-		spec = mat.specular * pow(intSpec, mat.shininess);
+			vec3 h = normalize(l + e);
+			float intSpec = max(dot(h,n), 0.0);
+			spec = mat.specular * pow(intSpec, mat.shininess);
+		}
+
+		finalLightsColor += intensity * mat.diffuse + spec;
 	}
+		
 	
-	color = max(intensity * mat.diffuse + spec, mat.ambient);
+	
+	color = max(finalLightsColor, mat.ambient);
 
 }

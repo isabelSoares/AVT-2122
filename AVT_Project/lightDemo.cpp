@@ -78,6 +78,8 @@ std::vector<MyCamera*> cameras = {
 // ======================================================================================
 
 // =================================== OTHER OBJECTS ===================================
+const int NUMBER_SPOTLIGHTS = 2;
+
 int gameTime = 0;
 // =====================================================================================
 
@@ -111,7 +113,10 @@ int startX, startY, tracking = 0;
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
 char s[32];
-float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
+float lightPos[NUMBER_SPOTLIGHTS * 4] = {
+	4.0f, 6.0f, 2.0f, 1.0f,
+	-4.0f, 6.0f, 2.0f, 1.0f
+};
 
 void timer(int value)
 {
@@ -185,11 +190,16 @@ void renderScene(void) {
 
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
-	/*
-	float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
-	*/
+	
+	float* res = (float*) malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
+	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
+
+		float lightOnePos[4];
+		memcpy(lightOnePos, lightPos + lightIndex * 4 * sizeof(float), 4 * sizeof(float));
+		multMatrixPoint(VIEW, lightOnePos, res + lightIndex * 4 * sizeof(float));   //lightPos definido em World Coord so is converted to eye space
+	}
+	glUniform4fv(lPos_uniformId, NUMBER_SPOTLIGHTS, res);
+	
 
 	// ================================ Check Position Car ================================
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
@@ -435,7 +445,7 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
 	
 	// printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	printf("InfoLog for Per Fragment Gouraud Shader\n%s\n\n", shader.getAllInfoLogs().c_str());

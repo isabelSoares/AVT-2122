@@ -48,7 +48,7 @@ void MyObject::render(VSShaderLib shader) {
 	GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	GLint normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	GLint lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+	GLint lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
 
 	// send matrices to OGL
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -310,9 +310,9 @@ MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float ma
 
 	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
 	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
-	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float spec[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 100.0f;
+	float shininess = 45.0f;
 	int texcount = 0;
 
 	memcpy(orangeMesh.mat.ambient, amb, 4 * sizeof(float));

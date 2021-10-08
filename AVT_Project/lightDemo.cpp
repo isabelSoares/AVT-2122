@@ -30,6 +30,7 @@
 #include "geometry.h"
 #include "objects_geometry.h"
 #include "camera.h"
+#include "spotlight.h"
 
 using namespace std;
 
@@ -77,10 +78,22 @@ std::vector<MyCamera*> cameras = {
 
 // ======================================================================================
 
+// =================================== LIGHT OBJECTS ===================================
+
+const int NUMBER_SPOTLIGHTS = 3;
+
+MySpotlight spotlights[NUMBER_SPOTLIGHTS] = {
+	MySpotlight(MyVec3{10.0f, 6.0f, 2.0f}, MySpotlightState::Off),
+	MySpotlight(MyVec3{-10.0f, 6.0f, 2.0f}, MySpotlightState::On),
+	MySpotlight(MyVec3{0.0f, 20.0f, 2.0f}, MySpotlightState::On),
+};
+
+// =====================================================================================
+
 // =================================== OTHER OBJECTS ===================================
-const int NUMBER_SPOTLIGHTS = 2;
 
 int gameTime = 0;
+
 // =====================================================================================
 
 // =================================== OTHER CONSTANTS ==================================
@@ -105,6 +118,7 @@ GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
 GLint lPos_uniformId;
+GLint lState_uniformId;
 	
 
 // Mouse Tracking Variables
@@ -113,10 +127,6 @@ int startX, startY, tracking = 0;
 // Frame counting and FPS computation
 long myTime,timebase = 0,frame = 0;
 char s[32];
-float lightPos[NUMBER_SPOTLIGHTS * 4] = {
-	4.0f, 6.0f, 2.0f, 1.0f,
-	-4.0f, 6.0f, 2.0f, 1.0f
-};
 
 void timer(int value)
 {
@@ -191,14 +201,20 @@ void renderScene(void) {
 	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
 
 	
-	float* res = (float*) malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
+	float* res_pos = (float*) malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
+	int* res_state = (int*)malloc(NUMBER_SPOTLIGHTS * sizeof(int));
 	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
 
-		float lightOnePos[4];
-		memcpy(lightOnePos, lightPos + lightIndex * 4 * sizeof(float), 4 * sizeof(float));
-		multMatrixPoint(VIEW, lightOnePos, res + lightIndex * 4 * sizeof(float));   //lightPos definido em World Coord so is converted to eye space
+		MySpotlight* currentSpotlight = &spotlights[lightIndex];
+
+		float * lightOnePos = currentSpotlight->getPosition();
+		multMatrixPoint(VIEW, lightOnePos, res_pos + lightIndex * 4);   //lightPos definido em World Coord so is converted to eye space
+
+		int state = currentSpotlight->getState();
+		memcpy(res_state + lightIndex, &state, sizeof(int));
 	}
-	glUniform4fv(lPos_uniformId, NUMBER_SPOTLIGHTS, res);
+	glUniform4fv(lPos_uniformId, NUMBER_SPOTLIGHTS, res_pos);
+	glUniform1iv(lState_uniformId, NUMBER_SPOTLIGHTS, res_state);
 	
 
 	// ================================ Check Position Car ================================
@@ -280,13 +296,22 @@ void processKeys(unsigned char key, int xx, int yy)
 		case 'q':
 			car.forward();
 			break;
+		case 'N':
+		case 'n':
+			break;
+		case 'C':
+		case 'c':
+			break;
+		case 'H':
+		case 'h':
+			break;
 		// ==============================================
 
-		case 'c': 
+		/*case 'c':
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", currentCamera->alpha, currentCamera->beta, currentCamera->r);
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
-		case 'n': glDisable(GL_MULTISAMPLE); break;
+		case 'n': glDisable(GL_MULTISAMPLE); break;*/
 	}
 }
 
@@ -446,6 +471,7 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
+	lState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_states");
 	
 	// printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	printf("InfoLog for Per Fragment Gouraud Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
@@ -470,7 +496,7 @@ void init()
 	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, TABLE_SIZE + 0.2 });
 	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 });
-	oranges = {};
+	oranges = { MyOrange(MyVec3{0, 2.0, -10.0}, MyVec3{1, 1, 1}, 0) };
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
 		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;

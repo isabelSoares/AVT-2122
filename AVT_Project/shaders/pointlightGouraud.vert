@@ -4,7 +4,8 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
-uniform vec4 l_positions[2];
+uniform vec4 l_positions[3];
+uniform int l_states[3];
 
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria
@@ -31,6 +32,8 @@ void main () {
 	vec4 finalLightsColor = vec4(0.0);
 
 	for (int lightIndex = 0 ; lightIndex < l_positions.length() ; lightIndex++ ) {
+
+		if (l_states[lightIndex] == 0) { continue; }
 
 		vec4 l_pos = l_positions[lightIndex];
 		

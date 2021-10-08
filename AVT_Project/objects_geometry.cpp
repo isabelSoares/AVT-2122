@@ -312,7 +312,7 @@ MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float ma
 	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
 	float spec[] = { 0.0f, 0.0f, 1.0f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 45.0f;
+	float shininess = 250.0f;
 	int texcount = 0;
 
 	memcpy(orangeMesh.mat.ambient, amb, 4 * sizeof(float));

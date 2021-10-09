@@ -1,4 +1,5 @@
 //
+// 
 // AVT demo light 
 // based on demos from GLSL Core Tutorial in Lighthouse3D.com   
 //
@@ -30,7 +31,10 @@
 #include "geometry.h"
 #include "objects_geometry.h"
 #include "camera.h"
+
 #include "spotlight.h"
+#include "directionalLight.h"
+#include "pointlight.h"
 
 using namespace std;
 
@@ -83,9 +87,22 @@ std::vector<MyCamera*> cameras = {
 const int NUMBER_SPOTLIGHTS = 3;
 
 MySpotlight spotlights[NUMBER_SPOTLIGHTS] = {
-	MySpotlight(MyVec3{10.0f, 6.0f, 2.0f}, MySpotlightState::Off),
-	MySpotlight(MyVec3{-10.0f, 6.0f, 2.0f}, MySpotlightState::On),
-	MySpotlight(MyVec3{0.0f, 20.0f, 2.0f}, MySpotlightState::On),
+	MySpotlight(MyVec3{10.0f, 6.0f, 2.0f}, 25, MySpotlightState::Off),
+	MySpotlight(MyVec3{-10.0f, 6.0f, 2.0f}, 25, MySpotlightState::Off),
+	MySpotlight(MyVec3{0.0f, 20.0f, 2.0f}, 25, MySpotlightState::Off),
+};
+
+const int NUMBER_DIRECTIONAL_LIGHTS = 1;
+
+MyDirectionalLight directionalLights[NUMBER_DIRECTIONAL_LIGHTS] = {
+	MyDirectionalLight(MyVec3{0, 0, 1}, MyDirectionalLightState::Off),
+};
+
+const int NUMBER_POINTLIGHTS = 2;
+
+MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
+	MyPointlight(MyVec3{20, 1, -10}, MyPointlightState::On),
+	MyPointlight(MyVec3{-20, 1, -10}, MyPointlightState::On),
 };
 
 // =====================================================================================
@@ -117,8 +134,19 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
-GLint lPos_uniformId;
-GLint lState_uniformId;
+
+// PointLight UniformID
+GLint lpPos_uniformId;
+GLint lpState_uniformId;
+
+// DirectionalLight UniformID
+GLint ldDirection_uniformId;
+GLint ldState_uniformId;
+
+// Spotlight UniformID
+GLint lsPos_uniformId;
+GLint lsAngle_uniformId;
+GLint lsState_uniformId;
 	
 
 // Mouse Tracking Variables
@@ -175,6 +203,66 @@ void changeSize(int w, int h) {
 	changeCameraSize();
 }
 
+// ------------------------------------------------------------
+//
+// Dealing with lights
+//
+
+void dealWithLights() {
+
+	// Pointlights Load Info
+	float* resp_pos = (float*)malloc(NUMBER_POINTLIGHTS * 4 * sizeof(float));
+	int* resp_state = (int*)malloc(NUMBER_POINTLIGHTS * sizeof(int));
+	for (int lightIndex = 0; lightIndex < NUMBER_POINTLIGHTS; lightIndex++) {
+
+		MyPointlight * currentPointlight = &pointlights[lightIndex];
+
+		float* lightOnePos = currentPointlight->getPosition();
+		multMatrixPoint(VIEW, lightOnePos, resp_pos + lightIndex * 4);
+
+		int state = currentPointlight->getState();
+		memcpy(resp_state + lightIndex, &state, sizeof(int));
+	}
+	glUniform4fv(lpPos_uniformId, NUMBER_POINTLIGHTS, resp_pos);
+	glUniform1iv(lpState_uniformId, NUMBER_POINTLIGHTS, resp_state);
+
+	// DirectionalLight Load Info
+	float* resd_dir = (float*)malloc(NUMBER_DIRECTIONAL_LIGHTS * 4 * sizeof(float));
+	int* resd_state = (int*)malloc(NUMBER_DIRECTIONAL_LIGHTS * sizeof(int));
+	for (int lightIndex = 0; lightIndex < NUMBER_DIRECTIONAL_LIGHTS; lightIndex++) {
+
+		MyDirectionalLight * currentDirectionalLight = &directionalLights[lightIndex];
+
+		float* lightDirection = currentDirectionalLight->getDirection();
+		multMatrixPoint(VIEW, lightDirection, resd_dir + lightIndex * 4);
+
+		int state = currentDirectionalLight->getState();
+		memcpy(resd_state + lightIndex, &state, sizeof(int));
+	}
+	glUniform4fv(ldDirection_uniformId, NUMBER_DIRECTIONAL_LIGHTS, resd_dir);
+	glUniform1iv(ldState_uniformId, NUMBER_DIRECTIONAL_LIGHTS, resd_state);
+
+	// Spotlights Load Info
+	float* ress_pos = (float*)malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
+	float* ress_angle = (float*)malloc(NUMBER_SPOTLIGHTS * sizeof(float));
+	int* ress_state = (int*)malloc(NUMBER_SPOTLIGHTS * sizeof(int));
+	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
+
+		MySpotlight* currentSpotlight = &spotlights[lightIndex];
+
+		float* lightOnePos = currentSpotlight->getPosition();
+		multMatrixPoint(VIEW, lightOnePos, ress_pos + lightIndex * 4);
+
+		float angle = currentSpotlight->getConeAngle();
+		memcpy(ress_angle + lightIndex, &angle, sizeof(float));
+
+		int state = currentSpotlight->getState();
+		memcpy(ress_state + lightIndex, &state, sizeof(int));
+	}
+	glUniform4fv(lsPos_uniformId, NUMBER_SPOTLIGHTS, ress_pos);
+	glUniform1fv(lsAngle_uniformId, NUMBER_SPOTLIGHTS, ress_angle);
+	glUniform1iv(lsState_uniformId, NUMBER_SPOTLIGHTS, ress_state);
+}
 
 // ------------------------------------------------------------
 //
@@ -196,26 +284,7 @@ void renderScene(void) {
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
 
-	//send the light position in eye coordinates
-
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	
-	float* res_pos = (float*) malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
-	int* res_state = (int*)malloc(NUMBER_SPOTLIGHTS * sizeof(int));
-	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
-
-		MySpotlight* currentSpotlight = &spotlights[lightIndex];
-
-		float * lightOnePos = currentSpotlight->getPosition();
-		multMatrixPoint(VIEW, lightOnePos, res_pos + lightIndex * 4);   //lightPos definido em World Coord so is converted to eye space
-
-		int state = currentSpotlight->getState();
-		memcpy(res_state + lightIndex, &state, sizeof(int));
-	}
-	glUniform4fv(lPos_uniformId, NUMBER_SPOTLIGHTS, res_pos);
-	glUniform1iv(lState_uniformId, NUMBER_SPOTLIGHTS, res_state);
-	
+	dealWithLights();
 
 	// ================================ Check Position Car ================================
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
@@ -296,16 +365,30 @@ void processKeys(unsigned char key, int xx, int yy)
 		case 'q':
 			car.forward();
 			break;
+
+		// ================= LIGHT STUFF =================
+
 		case 'N':
 		case 'n':
+			if (directionalLights[0].state == MyDirectionalLightState::On) directionalLights[0].turnOff();
+			else directionalLights[0].turnOn();
 			break;
 		case 'C':
 		case 'c':
+			for (int lightIndex = 0; lightIndex < NUMBER_POINTLIGHTS; lightIndex++) {
+				if (pointlights[lightIndex].state == MyPointlightState::On) pointlights[lightIndex].turnOff();
+				else pointlights[lightIndex].turnOn();
+			}
 			break;
 		case 'H':
 		case 'h':
+			for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
+				if (spotlights[lightIndex].state == MySpotlightState::On) spotlights[lightIndex].turnOff();
+				else spotlights[lightIndex].turnOn();
+			}
 			break;
-		// ==============================================
+
+
 
 		/*case 'c':
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", currentCamera->alpha, currentCamera->beta, currentCamera->r);
@@ -470,8 +553,19 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
-	lState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_states");
+
+	// Pointlight Get UniformID
+	lpPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "lp_positions");
+	lpState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "lp_states");
+
+	// DirectionalLight Get UniformID
+	ldDirection_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ld_directions");
+	ldState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ld_states");
+
+	// Spotlight Get UniformID
+	lsPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_positions");
+	lsAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_angles");
+	lsState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_states");
 	
 	// printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	printf("InfoLog for Per Fragment Gouraud Shader\n%s\n\n", shader.getAllInfoLogs().c_str());

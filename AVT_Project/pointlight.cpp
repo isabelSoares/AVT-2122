@@ -14,24 +14,21 @@
 #include "VSShaderlib.h"
 #include "objects_geometry.h"
 
-#include "spotlight.h"
+#include "pointlight.h"
 
-MySpotlight::MySpotlight(MyVec3 positionTemp, float coneAngleTemp, MySpotlightState stateTemp) {
+MyPointlight::MyPointlight(MyVec3 positionTemp, MyPointlightState stateTemp) {
 
 	position = positionTemp;
-	coneAngle = coneAngleTemp;
 	state = stateTemp;
 };
 
-void MySpotlight::turnOn() { state = MySpotlightState::On; };
-void MySpotlight::turnOff() { state = MySpotlightState::Off;  };
+void MyPointlight::turnOn() { state = MyPointlightState::On; };
+void MyPointlight::turnOff() { state = MyPointlightState::Off;  };
 
-float* MySpotlight::getPosition() {
+float* MyPointlight::getPosition() {
 
 	float positionW[4] = { position.x, position.y, position.z, 1.0f };
 	return positionW;
 };
 
-float MySpotlight::getConeAngle() { return coneAngle; }
-
-int MySpotlight::getState() { return (state == MySpotlightState::On) ? 1 : 0; }
+int MyPointlight::getState() { return (state == MyPointlightState::On) ? 1 : 0; }

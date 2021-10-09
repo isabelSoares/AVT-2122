@@ -160,9 +160,11 @@
   <ItemGroup>
     <ClCompile Include="AVTmathLib.cpp" />
     <ClCompile Include="basic_geometry.cpp" />
+    <ClCompile Include="directionalLight.cpp" />
     <ClCompile Include="lightDemo.cpp" />
     <ClCompile Include="objects_geometry.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="pointlight.cpp" />
     <ClCompile Include="spotlight.cpp" />
     <ClCompile Include="Texture_Loader.cpp" />
     <ClCompile Include="vsShaderLib.cpp" />
@@ -172,7 +174,9 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="geometry.h" />
+    <ClInclude Include="directionalLight.h" />
     <ClInclude Include="objects_geometry.h" />
+    <ClInclude Include="pointlight.h" />
     <ClInclude Include="spotlight.h" />
     <ClInclude Include="Texture_Loader.h" />
     <ClInclude Include="VertexAttrDef.h" />

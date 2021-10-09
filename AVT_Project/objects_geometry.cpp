@@ -306,7 +306,7 @@ float MyOrange::ANGLE_ROTATION_VELOCITY = 2.0f;
 MyOrange::MyOrange() {}
 MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float maxVelocity) {
 
-	MyMesh orangeMesh = createSphere(2.0, 20);
+	MyMesh orangeMesh = createSphere(2.0, 100);
 
 	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
 	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };

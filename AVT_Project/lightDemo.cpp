@@ -29,12 +29,13 @@
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
 #include "geometry.h"
-#include "objects_geometry.h"
 #include "camera.h"
 
 #include "spotlight.h"
 #include "directionalLight.h"
 #include "pointlight.h"
+
+#include "objects_geometry.h"
 
 using namespace std;
 
@@ -84,12 +85,11 @@ std::vector<MyCamera*> cameras = {
 
 // =================================== LIGHT OBJECTS ===================================
 
-const int NUMBER_SPOTLIGHTS = 3;
+const int NUMBER_SPOTLIGHTS = 2;
 
 MySpotlight spotlights[NUMBER_SPOTLIGHTS] = {
-	MySpotlight(MyVec3{10.0f, 6.0f, 2.0f}, 25, MySpotlightState::Off),
-	MySpotlight(MyVec3{-10.0f, 6.0f, 2.0f}, 25, MySpotlightState::Off),
-	MySpotlight(MyVec3{0.0f, 20.0f, 2.0f}, 25, MySpotlightState::Off),
+	MySpotlight(MyVec3{10.0f, 8.0f, 0.0f}, MyVec3{0, -1, -1}, 5, MySpotlightState::Off),
+	MySpotlight(MyVec3{-10.0f, 8.0f, 0.0f}, MyVec3{0, -1, -1}, 5, MySpotlightState::Off),
 };
 
 const int NUMBER_DIRECTIONAL_LIGHTS = 1;
@@ -116,8 +116,8 @@ int gameTime = 0;
 // =================================== OTHER CONSTANTS ==================================
 const int FPS = 60;
 
-const int TABLE_SIZE = 500;
-const int NUMBER_ORANGES = 75;
+const int TABLE_SIZE = 250;
+const int NUMBER_ORANGES = 15;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
 // ======================================================================================
@@ -145,6 +145,7 @@ GLint ldState_uniformId;
 
 // Spotlight UniformID
 GLint lsPos_uniformId;
+GLint lsDirection_uniformId;
 GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 	
@@ -244,6 +245,7 @@ void dealWithLights() {
 
 	// Spotlights Load Info
 	float* ress_pos = (float*)malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
+	float* ress_dir = (float*)malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
 	float* ress_angle = (float*)malloc(NUMBER_SPOTLIGHTS * sizeof(float));
 	int* ress_state = (int*)malloc(NUMBER_SPOTLIGHTS * sizeof(int));
 	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
@@ -253,6 +255,9 @@ void dealWithLights() {
 		float* lightOnePos = currentSpotlight->getPosition();
 		multMatrixPoint(VIEW, lightOnePos, ress_pos + lightIndex * 4);
 
+		float* lightDirection = currentSpotlight->getDirection();
+		multMatrixPoint(VIEW, lightDirection, ress_dir + lightIndex * 4);
+
 		float angle = currentSpotlight->getConeAngle();
 		memcpy(ress_angle + lightIndex, &angle, sizeof(float));
 
@@ -260,8 +265,20 @@ void dealWithLights() {
 		memcpy(ress_state + lightIndex, &state, sizeof(int));
 	}
 	glUniform4fv(lsPos_uniformId, NUMBER_SPOTLIGHTS, ress_pos);
+	glUniform4fv(lsDirection_uniformId, NUMBER_SPOTLIGHTS, ress_dir);
 	glUniform1fv(lsAngle_uniformId, NUMBER_SPOTLIGHTS, ress_angle);
 	glUniform1iv(lsState_uniformId, NUMBER_SPOTLIGHTS, ress_state);
+}
+
+void checkCollisions() {
+
+	MyVec3 carPosition = car.getPosition();
+	// Car with Oranges
+	for (int i = 0; i < NUMBER_ORANGES; i++) {
+
+		MyVec3 currentOrangePosition = oranges[i].getPosition();
+		
+	}
 }
 
 // ------------------------------------------------------------
@@ -286,7 +303,7 @@ void renderScene(void) {
 
 	dealWithLights();
 
-	// ================================ Check Position Car ================================
+	// ================================ Check Position Oranges ================================
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
 
 		MyVec3 currentPosition = oranges[i].getPosition();
@@ -294,10 +311,11 @@ void renderScene(void) {
 
 			float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 			float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
-			oranges[i] = MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 30 + 1));
+			oranges[i] = MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1));
 		}
 	}
 	
+	checkCollisions();
 
 	// ====================================================================================
 
@@ -564,6 +582,7 @@ GLuint setupShaders() {
 
 	// Spotlight Get UniformID
 	lsPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_positions");
+	lsDirection_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_directions");
 	lsAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_angles");
 	lsState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_states");
 	
@@ -589,12 +608,13 @@ void init()
 
 	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, TABLE_SIZE + 0.2 });
-	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 });
+	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
+	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 }, carSpotlights);
 	oranges = { MyOrange(MyVec3{0, 2.0, -10.0}, MyVec3{1, 1, 1}, 0) };
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
 		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
-		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 30 + 1)));
+		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1)));
 	}
 	butter = MyPacketButter(MyVec3{ 5.0f, 0.2f, 5.0f }, MyVec3{1.0f, 0.4f, 0.5f});
 

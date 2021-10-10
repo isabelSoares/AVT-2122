@@ -12,13 +12,13 @@
 #include "VertexAttrDef.h"
 #include "geometry.h"
 #include "VSShaderlib.h"
-#include "objects_geometry.h"
 
 #include "spotlight.h"
 
-MySpotlight::MySpotlight(MyVec3 positionTemp, float coneAngleTemp, MySpotlightState stateTemp) {
+MySpotlight::MySpotlight(MyVec3 positionTemp, MyVec3 directionTemp, float coneAngleTemp, MySpotlightState stateTemp) {
 
 	position = positionTemp;
+	direction = directionTemp;
 	coneAngle = coneAngleTemp;
 	state = stateTemp;
 };
@@ -30,6 +30,12 @@ float* MySpotlight::getPosition() {
 
 	float positionW[4] = { position.x, position.y, position.z, 1.0f };
 	return positionW;
+};
+
+float* MySpotlight::getDirection() {
+
+		float directionW[4] = { direction.x, direction.y, direction.z, 0.0f };
+		return directionW;
 };
 
 float MySpotlight::getConeAngle() { return coneAngle; }

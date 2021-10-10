@@ -21,7 +21,6 @@ Basic Revolution Geometry
 #include "geometry.h"
 #include "cube.h"
 
-
 GLuint VboId[2];
 
 MyMesh createQuad(float size_x, float size_y) {

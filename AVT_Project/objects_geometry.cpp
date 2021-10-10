@@ -14,6 +14,7 @@
 
 #include "VSShaderlib.h"
 
+#include "spotlight.h"
 #include "objects_geometry.h"
 
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
@@ -164,7 +165,17 @@ float MyCar::MAX_WHEEL_ANGLE = 3.0f;
 float MyCar::FRICTION_ROTATION_COEFICIENT = 0.055f;
 
 MyCar::MyCar() {}
-MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<MySpotlight*> spotlightsTemp) {
+
+	spotlights = spotlightsTemp;
+	float xVariations[2] = { 1.0, -1.0f };
+	int indexVariations = 0;
+	for (MySpotlight* spotlight : spotlights) {
+
+		spotlight->direction = direction;
+		spotlight->position = MyVec3{ initialPositionTemp.x + xVariations[indexVariations], initialPositionTemp.y, initialPositionTemp.z - 1};
+		indexVariations = indexVariations++;
+	}
 
 	MyMesh mainBlockMesh = createCube();
 
@@ -279,6 +290,15 @@ void MyCar::tick() {
 	for (MyObject& wheel : wheels) {
 		wheel.rotateVec = { wheelStandardRotation, wheelDriveRotation };
 	}
+
+	// Update spotlight positions and directions
+	for (MySpotlight* spotlight : spotlights) {
+		spotlight->position.x += velocity * direction.x;
+		spotlight->position.y += velocity * direction.y;
+		spotlight->position.z += velocity * direction.z;
+
+		spotlight->direction = direction;
+	}
 }
 
 void MyCar::forward() {
@@ -306,7 +326,7 @@ float MyOrange::ANGLE_ROTATION_VELOCITY = 2.0f;
 MyOrange::MyOrange() {}
 MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float maxVelocity) {
 
-	MyMesh orangeMesh = createSphere(2.0, 100);
+	MyMesh orangeMesh = createSphere(2.0, 50);
 
 	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
 	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };

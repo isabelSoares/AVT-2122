@@ -3,18 +3,7 @@
 
 #define O_PI       3.14159265358979323846f
 
-struct MyVec3 {
-	float x;
-	float y;
-	float z;
-};
-
-struct MyVec3Rotation {
-	float angle;
-	float x;
-	float y;
-	float z;
-};
+#include "spotlight.h"
 
 class MyObject {
 
@@ -66,6 +55,8 @@ public:
 	// ============ Car Objects ===============
 	MyObject mainBlock;
 	std::vector<MyObject> wheels;
+
+	std::vector<MySpotlight*> spotlights;
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;
@@ -82,7 +73,7 @@ public:
 	float rotationWheelAngle = 0.0f;
 
 	MyCar();
-	MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+	MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<MySpotlight*> spotlightsTemp);
 
 	void render(VSShaderLib shader);
 	MyVec3 getPosition();

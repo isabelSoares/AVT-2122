@@ -1,6 +1,19 @@
 
 #define MAX_TEXTURES 8
 
+struct MyVec3 {
+	float x;
+	float y;
+	float z;
+};
+
+struct MyVec3Rotation {
+	float angle;
+	float x;
+	float y;
+	float z;
+};
+
 enum texType {DIFFUSE, SPECULAR, NORMALS, BUMP};
 
 struct Material{

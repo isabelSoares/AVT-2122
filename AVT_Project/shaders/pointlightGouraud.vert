@@ -13,9 +13,10 @@ uniform vec4 ld_directions[1];
 uniform int ld_states[1];
 
 // Spotlights
-uniform vec4 ls_positions[3];
-uniform float ls_angles[3];
-uniform int ls_states[3];
+uniform vec4 ls_positions[2];
+uniform vec4 ls_directions[2];
+uniform float ls_angles[2];
+uniform int ls_states[2];
 
 in vec4 position;
 in vec4 normal;
@@ -60,8 +61,8 @@ void main () {
 		vec3 e = normalize(eye);
 
 		float intensity = max(dot(n,l), 0.0);
-		float angle = degrees(acos(dot(n, l)));
-		if (angle > ls_angles[lightIndex]) intensity = 0.0;
+		float angle = degrees(acos(dot(-l, vec3(normalize(ls_directions[lightIndex])))));
+		if (abs(angle) > ls_angles[lightIndex]) intensity = 0.0;
 	
 		if (intensity > 0.0) {
 

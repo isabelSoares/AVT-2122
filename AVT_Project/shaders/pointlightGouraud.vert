@@ -36,9 +36,20 @@ out vec4 color;
 
 void main () {
 
+	// ============================== COMMON CALCULATIONS ==============================
+
 	vec4 pos = m_viewModel * position;
 
 	vec3 normalGouraud = normalize(m_normal * normal.xyz);
+
+	vec3 eye = vec3(-pos);
+	
+	vec3 n = normalize(normalGouraud);
+	vec3 e = normalize(eye);
+
+	gl_Position = m_pvm * position;
+
+	// ============================== =================== ==============================
 
 	vec4 finalLightsColor = vec4(0.0);
 
@@ -50,15 +61,10 @@ void main () {
 		vec4 l_pos = ls_positions[lightIndex];
 		
 		vec3 lightDir = vec3(l_pos - pos);
-		vec3 eye = vec3(-pos);
-
-		gl_Position = m_pvm * position;
-
+		
 		vec4 spec = vec4(0.0);
 
-		vec3 n = normalize(normalGouraud);
 		vec3 l = normalize(lightDir);
-		vec3 e = normalize(eye);
 
 		float intensity = max(dot(n,l), 0.0);
 		float angle = degrees(acos(dot(-l, vec3(normalize(ls_directions[lightIndex])))));
@@ -80,15 +86,10 @@ void main () {
 		if (ld_states[lightIndex] == 0) { continue; }
 		
 		vec3 lightDir = vec3(- ld_directions[lightIndex]);
-		vec3 eye = vec3(-pos);
-
-		gl_Position = m_pvm * position;
 
 		vec4 spec = vec4(0.0);
 
-		vec3 n = normalize(normalGouraud);
 		vec3 l = normalize(lightDir);
-		vec3 e = normalize(eye);
 
 		float intensity = max(dot(n,l), 0.0);
 	
@@ -110,15 +111,10 @@ void main () {
 		vec4 l_pos = lp_positions[lightIndex];
 		
 		vec3 lightDir = vec3(l_pos - pos);
-		vec3 eye = vec3(-pos);
-
-		gl_Position = m_pvm * position;
 
 		vec4 spec = vec4(0.0);
 
-		vec3 n = normalize(normalGouraud);
 		vec3 l = normalize(lightDir);
-		vec3 e = normalize(eye);
 
 		float intensity = max(dot(n,l), 0.0);
 	
@@ -132,7 +128,7 @@ void main () {
 		finalLightsColor += intensity * mat.diffuse + spec;
 	}
 	
-	color = finalLightsColor;
-	// color = max(finalLightsColor, mat.ambient);
+	// color = finalLightsColor;
+	color = max(finalLightsColor, mat.ambient);
 
 }

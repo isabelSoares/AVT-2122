@@ -43,8 +43,10 @@ void MyObject::render(VSShaderLib shader) {
 	glUniform1f(loc, mesh.mat.shininess);
 	pushMatrix(MODEL);
 	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
-	scale(MODEL, scaleVec.x, scaleVec.y, scaleVec.z);
 	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z);  }
+	scale(MODEL, scaleVec.x, scaleVec.y, scaleVec.z);
+
+	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
 
 	GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
@@ -165,17 +167,9 @@ float MyCar::MAX_WHEEL_ANGLE = 3.0f;
 float MyCar::FRICTION_ROTATION_COEFICIENT = 0.055f;
 
 MyCar::MyCar() {}
-MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<MySpotlight*> spotlightsTemp) {
+MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 
-	spotlights = spotlightsTemp;
-	float xVariations[2] = { 1.0, -1.0f };
-	int indexVariations = 0;
-	for (MySpotlight* spotlight : spotlights) {
-
-		spotlight->direction = direction;
-		spotlight->position = MyVec3{ initialPositionTemp.x + xVariations[indexVariations], initialPositionTemp.y, initialPositionTemp.z - 1};
-		indexVariations = indexVariations++;
-	}
+	position = positionTemp;
 
 	MyMesh mainBlockMesh = createCube();
 
@@ -193,7 +187,7 @@ MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<My
 	mainBlockMesh.mat.shininess = shininessBlock;
 	mainBlockMesh.mat.texCount = texcountBlock;
 
-	mainBlock = MyObject(mainBlockMesh, initialPositionTemp, initialScaleTemp, {});
+	mainBlock = MyObject(mainBlockMesh, position + MAIN_BLOCK_TRANSLATION_VARIATION, scaling * MAIN_BLOCK_SCALING_VARIATION, {MAIN_BLOCK_ROTATION_VARIATION});
 
 	float ambWheel[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float diffWheel[] = { 0.6f, 0.1f, 0.3f, 1.0f };
@@ -204,7 +198,7 @@ MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<My
 
 	for (int i = 0; i < 4; i++) {
 
-		MyMesh wheelMesh = createTorus(1, 1.5, 20, 20);
+		MyMesh wheelMesh = createTorus(0.3, 0.45, 20, 20);
 
 		memcpy(wheelMesh.mat.ambient, ambWheel, 4 * sizeof(float));
 		memcpy(wheelMesh.mat.diffuse, diffWheel, 4 * sizeof(float));
@@ -213,21 +207,20 @@ MyCar::MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<My
 		wheelMesh.mat.shininess = shininessWheel;
 		wheelMesh.mat.texCount = texcountWheel;
 
-		MyVec3 varPosition = { 0, 0, 0 };
-		float distanceWheelX = 0.58;
-		float distanceWheelZ = 0.8;
-		if (i % 2 == 0) { varPosition.x = distanceWheelX; }
-		else { varPosition.x = -distanceWheelX;  }
-		if (float(i) / 2.0 >= 1.0) { varPosition.z = distanceWheelZ; }
-		else { varPosition.z = -distanceWheelZ; }
+		MyVec3 wheelPosition = position;
+		MyVec3 wheelScale = scaling * WHEEL_SCALING_VARIATION;
 
-		MyVec3 wheelPosition = MyVec3{ initialPositionTemp.x + varPosition.x, initialPositionTemp.y - (initialScaleTemp.y / 2.2f), initialPositionTemp.z + varPosition.z };
-		MyVec3 wheelScale = MyVec3{ initialScaleTemp.x / 3, initialScaleTemp.y / 4, initialScaleTemp.x / 3 };
-		MyVec3Rotation wheelRotation = MyVec3Rotation{ 90, 0, 0, 1 };
-
-		MyObject wheel = MyObject(wheelMesh, wheelPosition, wheelScale, { wheelRotation });
+		MyObject wheel = MyObject(wheelMesh, wheelPosition, wheelScale, { WHEEL_ROTATION_VARIATION, MyVec3Rotation{float(180), 1, 0, 0} });
 		wheels.push_back(wheel);
+		wheels[i].translationBeforeRotation = { WHEELS_TRANSLATION_VARIATION[i] };
 	}
+
+	spotlights = spotlightsTemp;
+	for (int i = 0; i < 2; i++) {
+		spotlights[i]->direction = direction;
+		spotlights[i]->position = position + SPOTLIGHTS_TRANSLATION_VARIATION[i];
+	}
+
 }
 
 void MyCar::render(VSShaderLib shader) {
@@ -238,7 +231,7 @@ void MyCar::render(VSShaderLib shader) {
 }
 
 MyVec3 MyCar::getPosition() {
-	return mainBlock.positionVec;
+	return position;
 }
 
 void MyCar::tick() {
@@ -264,40 +257,43 @@ void MyCar::tick() {
 	else if (rotationWheelAngle <= - MAX_WHEEL_ANGLE) { rotationWheelAngle = - MAX_WHEEL_ANGLE; }
 
 	// Update direction
-	double angleRadians = atan2(direction.z, direction.x);
-	double angleDegrees = angleRadians * 180 / O_PI;
+	float dot = 1 * direction.x + 0 * direction.z;
+	float det = 1 * direction.z - 0 * direction.x;
+	double angleRadians = atan2(det, dot);
+	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
 
 	angleDegrees += rotationWheelAngle;
 
-	direction.x = float(cos(angleDegrees / (180 / O_PI)));
-	direction.z = float(sin(angleDegrees / (180 / O_PI)));
+	direction.x = float(cos((angleDegrees) / (180 / O_PI)));
+	direction.z = float(sin((angleDegrees) / (180 / O_PI)));
 
-	// Update positions
-	mainBlock.positionVec.x += velocity * direction.x;
-	mainBlock.positionVec.y += velocity * direction.y;
-	mainBlock.positionVec.z += velocity * direction.z;
+	// Update position
+	position.x += velocity * direction.x;
+	position.y += velocity * direction.y;
+	position.z += velocity * direction.z;
 
-	for (MyObject & wheel : wheels) {
-		wheel.positionVec.x += velocity * direction.x;
-		wheel.positionVec.y += velocity * direction.y;
-		wheel.positionVec.z += velocity * direction.z;
+	// Update Position and Rotation
+
+	mainBlock.scaleVec = scaling * MAIN_BLOCK_SCALING_VARIATION;
+	mainBlock.rotateVec = { MyVec3Rotation{float(- angleDegrees - 90), 0, 1, 0} };
+	mainBlock.positionVec = position + MAIN_BLOCK_TRANSLATION_VARIATION;
+
+	for (int i = 0; i < 4; i++) {
+
+		MyVec3 wheelPosition = position;
+		MyVec3 wheelScale = scaling * WHEEL_SCALING_VARIATION;
+		std::vector<MyVec3Rotation> wheelRotations = { WHEEL_ROTATION_VARIATION, MyVec3Rotation{float(- angleDegrees - 90), 1, 0, 0} };
+		
+		wheels[i].positionVec = wheelPosition;
+		wheels[i].scaleVec = wheelScale;
+		wheels[i].rotateVec = wheelRotations;
+
+		wheels[i].translationBeforeRotation = { WHEELS_TRANSLATION_VARIATION[i] };
 	}
 
-	// Update rotations
-	mainBlock.rotateVec = { MyVec3Rotation{ -float(angleDegrees) - 90 , 0, 1, 0 } };
-	MyVec3Rotation wheelStandardRotation = MyVec3Rotation{ 90, 0, 0, 1 };
-	MyVec3Rotation wheelDriveRotation = MyVec3Rotation{ -float(angleDegrees) - 90, 1, 0, 0 };
-	for (MyObject& wheel : wheels) {
-		wheel.rotateVec = { wheelStandardRotation, wheelDriveRotation };
-	}
-
-	// Update spotlight positions and directions
-	for (MySpotlight* spotlight : spotlights) {
-		spotlight->position.x += velocity * direction.x;
-		spotlight->position.y += velocity * direction.y;
-		spotlight->position.z += velocity * direction.z;
-
-		spotlight->direction = direction;
+	for (int i = 0; i < 2; i++) {
+		spotlights[i]->direction = direction;
+		spotlights[i]->position = position + SPOTLIGHTS_TRANSLATION_VARIATION[i];
 	}
 }
 

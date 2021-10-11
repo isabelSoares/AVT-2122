@@ -609,7 +609,7 @@ void init()
 	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, TABLE_SIZE + 0.2 });
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
-	car = MyCar(MyVec3{ 0, 0.75, 0 }, MyVec3{ 1, 1, 1.7 }, carSpotlights);
+	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
 	oranges = { MyOrange(MyVec3{0, 2.0, -10.0}, MyVec3{1, 1, 1}, 0) };
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
 		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;

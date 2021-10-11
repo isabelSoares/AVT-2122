@@ -13,6 +13,8 @@ public:
 	MyVec3 scaleVec;
 	std::vector<MyVec3Rotation> rotateVec;
 
+	std::vector<MyVec3> translationBeforeRotation = {};
+
 
 	// Display
 	VSShaderLib shader;
@@ -23,7 +25,7 @@ public:
 	void render(VSShaderLib shader);
 };
 
-class MyTable {
+class MyTable {		
 public:
 
 	// ============ Table Objects ============
@@ -57,6 +59,18 @@ public:
 	std::vector<MyObject> wheels;
 
 	std::vector<MySpotlight*> spotlights;
+	// ============ Car Object Attributes ============
+	MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 1, 1, 1.5 };
+	MyVec3Rotation MAIN_BLOCK_ROTATION_VARIATION = MyVec3Rotation{-90, 0, 1, 0};
+	MyVec3 MAIN_BLOCK_TRANSLATION_VARIATION = MyVec3{ 0, 0.95, 0};
+	// =====
+	MyVec3 WHEEL_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
+	MyVec3Rotation WHEEL_ROTATION_VARIATION = MyVec3Rotation{ 90, 0, 0, 1 };
+	MyVec3 WHEELS_TRANSLATION_VARIATION[4] = { MyVec3{ 0.55, 0.58, 0.8 }, MyVec3{ 0.55, 0.58, -0.8 }, MyVec3{ 0.55, -0.58, 0.8 }, MyVec3{ 0.55, -0.58, -0.8 } };
+	// =====
+	MyVec3 SPOTLIGHT_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
+	MyVec3Rotation SPOTLIGHT_ROTATION_VARIATION = MyVec3Rotation{ 0, 0, 1, 0 };
+	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.45, 0, 1}, MyVec3{ -0.45, 0, 1} };
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;
@@ -66,6 +80,8 @@ public:
 	static float MAX_WHEEL_ANGLE;
 	static float FRICTION_ROTATION_COEFICIENT;
 	// ============ Car Attributes ============
+	MyVec3 position;
+	MyVec3 scaling = MyVec3{1, 1, 1};
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 	float velocity = 0.0f;
 	float acceleration = 0.0f;
@@ -73,7 +89,7 @@ public:
 	float rotationWheelAngle = 0.0f;
 
 	MyCar();
-	MyCar(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, std::vector<MySpotlight*> spotlightsTemp);
+	MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp);
 
 	void render(VSShaderLib shader);
 	MyVec3 getPosition();

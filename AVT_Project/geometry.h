@@ -5,7 +5,20 @@ struct MyVec3 {
 	float x;
 	float y;
 	float z;
+
+	inline MyVec3 operator+(MyVec3 a) {
+		return { a.x + x, a.y + y, a.z + z };
+	}
+
+	inline MyVec3 operator*(MyVec3 a) {
+		return { a.x * x, a.y * y, a.z * z };
+	}
+
+	inline MyVec3 operator/(MyVec3 a) {
+		return { x / a.x, y / a.y , z / a.z};
+	}
 };
+
 
 struct MyVec3Rotation {
 	float angle;

@@ -613,7 +613,7 @@ void init()
 	}
 
 	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
-	road = MyRoad(MyVec3{ 0, -0.2, 0 }, MyVec3{ 5, 0.3, TABLE_SIZE + 0.2 });
+	road = MyRoad(MyVec3{ 0, 0, 0 }, 20, TABLE_SIZE + 0.2, 2, 0.4, 0.6);
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
 	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
 	oranges = { MyOrange(MyVec3{0, 2.0, -10.0}, MyVec3{1, 1, 1}, 0) };
@@ -628,7 +628,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(0.098f, 0.098f, 0.439f, 1.0f);
 
 }
 

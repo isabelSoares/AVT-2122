@@ -41,11 +41,18 @@ public:
 
 	// ============ Road Objects ============
 	MyObject mainRoad;
-	MyObject leftMargin;
-	MyObject rightMargin;
+	std::vector<MyObject> leftMargin = {};
+	std::vector<MyObject> rightMargin = {};
+	// ============ Road Object Attributes ============
+	float ROAD_HEIGHT = 0.3;
+	MyVec3 MARGIN_SCALING_VARIATION = MyVec3{ 0.2, 2, 1.01 };
+	// ============ Road Attributes ============
+	MyVec3 position;
+	MyVec3 scaling = MyVec3{ 1, 1, 1 };
+	MyVec3 direction = MyVec3{ 0, 0, -1 };
 
 	MyRoad();
-	MyRoad(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+	MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float inner_cheerio_radius, float outter_cheerio_radius);
 
 	void render(VSShaderLib shader);
 };

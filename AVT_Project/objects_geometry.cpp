@@ -100,7 +100,10 @@ void MyTable::render(VSShaderLib shader) {
 }
 
 MyRoad::MyRoad() {}
-MyRoad::MyRoad(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float inner_cheerio_radius, float outter_cheerio_radius) {
+
+	position = positionTemp;
+	scaling = MyVec3{ width, ROAD_HEIGHT, length };
 
 	MyMesh mainRoadMesh = createCube();
 
@@ -118,44 +121,68 @@ MyRoad::MyRoad(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	mainRoadMesh.mat.shininess = shininessRoad;
 	mainRoadMesh.mat.texCount = texcountRoad;
 
-	mainRoad = MyObject(mainRoadMesh, initialPositionTemp, initialScaleTemp, {});
+	MyVec3 mainRoadScaling = scaling;
+	MyVec3 mainRoadTranslation = position;
 
-	MyMesh leftMarginMesh = createCube();
-	MyMesh rightMarginMesh = createCube();
+	mainRoad = MyObject(mainRoadMesh, mainRoadTranslation, mainRoadScaling, {});
 
-	float ambMargin[] = { 0.50f, 0.50f, 0.50f, 1.0f };
-	float diffMargin[] = { 0.2f, 0.8f, 0.50f, 1.0f };
-	float specMargin[] = { 0.8f, 0.2f, 0.8f, 1.0f };
-	float emissiveMargin[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininessMargin = 100.0f;
-	int texcountMargin = 0;
+	float ambCheerio[] = { 1.0f, 0.77f, 0.05f, 1.0f };
+	float diffCheerio[] = { 0.2f, 0.8f, 0.50f, 1.0f };
+	float specCheerio[] = { 0.8f, 0.2f, 0.8f, 1.0f };
+	float emissiveCheerio[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininessCheerio = 100.0f;
+	int texcountCheerio = 0;
 
-	memcpy(leftMarginMesh.mat.ambient, ambMargin, 4 * sizeof(float));
-	memcpy(leftMarginMesh.mat.diffuse, diffMargin, 4 * sizeof(float));
-	memcpy(leftMarginMesh.mat.specular, specMargin, 4 * sizeof(float));
-	memcpy(leftMarginMesh.mat.emissive, emissiveMargin, 4 * sizeof(float));
-	leftMarginMesh.mat.shininess = shininessMargin;
-	leftMarginMesh.mat.texCount = texcountMargin;
+	// Left / Margin
+	for (int i = 0; i < 2; i++) {
+		
+		// 1 = Right / -1 = Left
+		int correctedMarginFactor = i * 2 - 1;
 
-	memcpy(rightMarginMesh.mat.ambient, ambMargin, 4 * sizeof(float));
-	memcpy(rightMarginMesh.mat.diffuse, diffMargin, 4 * sizeof(float));
-	memcpy(rightMarginMesh.mat.specular, specMargin, 4 * sizeof(float));
-	memcpy(rightMarginMesh.mat.emissive, emissiveMargin, 4 * sizeof(float));
-	rightMarginMesh.mat.shininess = shininessMargin;
-	rightMarginMesh.mat.texCount = texcountMargin;
+		// Backwards / Forwards
+		for (int j = 0; j < 2; j++) {
 
-	MyVec3 leftMarginPosition = MyVec3{ initialPositionTemp.x - float(2), initialPositionTemp.y, initialPositionTemp.z };
-	MyVec3 rightMarginPosition = MyVec3{ initialPositionTemp.x + float(2), initialPositionTemp.y, initialPositionTemp.z };
-	MyVec3 marginScale = MyVec3{ initialScaleTemp.x / 5, initialScaleTemp.y + float(0.5), initialScaleTemp.z + float(0.02) };
+			// 1 = Forwards / -1 = Backwards
+			int correctedPlacingFactor = - (j * 2 - 1);
 
-	leftMargin = MyObject(leftMarginMesh, leftMarginPosition, marginScale, {});
-	rightMargin = MyObject(rightMarginMesh, rightMarginPosition, marginScale, {});
+			float currentPosition = 0.0f;
+			while (abs(currentPosition) <= length / 2) {
+
+				// Backward does not place in 0
+				if (correctedPlacingFactor == -1 && currentPosition == 0) { 
+					// Update next position
+					currentPosition = currentPosition + correctedPlacingFactor * cheerios_distance;
+					continue;
+				}
+
+				MyMesh cheerioMesh = createTorus(inner_cheerio_radius, outter_cheerio_radius, 25, 25);
+
+				memcpy(cheerioMesh.mat.ambient, ambCheerio, 4 * sizeof(float));
+				memcpy(cheerioMesh.mat.diffuse, diffCheerio, 4 * sizeof(float));
+				memcpy(cheerioMesh.mat.specular, specCheerio, 4 * sizeof(float));
+				memcpy(cheerioMesh.mat.emissive, emissiveCheerio, 4 * sizeof(float));
+				cheerioMesh.mat.shininess = shininessCheerio;
+				cheerioMesh.mat.texCount = texcountCheerio;
+
+
+				MyVec3 cheerioPosition = position + MyVec3{ correctedMarginFactor * (width / 2 - outter_cheerio_radius), (outter_cheerio_radius - inner_cheerio_radius) * 2, currentPosition};
+				MyVec3 cheerioScale = MyVec3{ 1, 2, 1 };
+
+				MyObject cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
+				if (correctedMarginFactor == 1) rightMargin.push_back(cheerio);
+				else leftMargin.push_back(cheerio);
+
+				// Update next position
+				currentPosition = currentPosition + correctedPlacingFactor * cheerios_distance;
+			}
+		}
+	}
 }
 
 void MyRoad::render(VSShaderLib shader) {
 	mainRoad.render(shader);
-	leftMargin.render(shader);
-	rightMargin.render(shader);
+	for (MyObject cheerio : leftMargin) cheerio.render(shader);
+	for (MyObject cheerio : rightMargin) cheerio.render(shader);
 }
 
 float MyCar::MAX_VELOCITY = 1.5f;

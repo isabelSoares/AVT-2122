@@ -17,7 +17,7 @@ public:
 	void turnOn();
 	void turnOff();
 
-	float* getDirection();
+	MyVec3 getDirection();
 	int getState();
 };
 #endif

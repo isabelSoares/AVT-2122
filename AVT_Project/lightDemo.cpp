@@ -88,21 +88,21 @@ std::vector<MyCamera*> cameras = {
 const int NUMBER_SPOTLIGHTS = 2;
 
 MySpotlight spotlights[NUMBER_SPOTLIGHTS] = {
-	MySpotlight(MyVec3{10.0f, 8.0f, 0.0f}, MyVec3{0, -1, -1}, 5, MySpotlightState::Off),
-	MySpotlight(MyVec3{-10.0f, 8.0f, 0.0f}, MyVec3{0, -1, -1}, 5, MySpotlightState::Off),
+	MySpotlight(MyVec3{0, 0, 0}, {}, {}, 5, MySpotlightState::Off),
+	MySpotlight(MyVec3{0, 0, 0}, {}, {}, 5, MySpotlightState::Off),
 };
 
 const int NUMBER_DIRECTIONAL_LIGHTS = 1;
 
 MyDirectionalLight directionalLights[NUMBER_DIRECTIONAL_LIGHTS] = {
-	MyDirectionalLight(MyVec3{0, 0, 1}, MyDirectionalLightState::Off),
+	MyDirectionalLight(MyVec3{0, -1, 1}, MyDirectionalLightState::Off),
 };
 
 const int NUMBER_POINTLIGHTS = 2;
 
 MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
-	MyPointlight(MyVec3{20, 1, -10}, MyPointlightState::On),
-	MyPointlight(MyVec3{-20, 1, -10}, MyPointlightState::On),
+	MyPointlight(MyVec3{20, 1, -10}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{-20, 1, -10}, {}, {}, MyPointlightState::On),
 };
 
 // =====================================================================================
@@ -217,8 +217,10 @@ void dealWithLights() {
 	for (int lightIndex = 0; lightIndex < NUMBER_POINTLIGHTS; lightIndex++) {
 
 		MyPointlight * currentPointlight = &pointlights[lightIndex];
+		currentPointlight->computeEyeStuff();
 
-		float* lightOnePos = currentPointlight->getPosition();
+		MyVec3 lightPos = currentPointlight->getPosition();
+		float lightOnePos[4] = { lightPos.x, lightPos.y, lightPos.z, 1.0 };
 		multMatrixPoint(VIEW, lightOnePos, resp_pos + lightIndex * 4);
 
 		int state = currentPointlight->getState();
@@ -234,8 +236,9 @@ void dealWithLights() {
 
 		MyDirectionalLight * currentDirectionalLight = &directionalLights[lightIndex];
 
-		float* lightDirection = currentDirectionalLight->getDirection();
-		multMatrixPoint(VIEW, lightDirection, resd_dir + lightIndex * 4);
+		MyVec3 lightDirection = currentDirectionalLight->getDirection();
+		float lightOneDirection[4] = { lightDirection.x, lightDirection.y, lightDirection.z, 0.0 };
+		multMatrixPoint(VIEW, lightOneDirection, resd_dir + lightIndex * 4);
 
 		int state = currentDirectionalLight->getState();
 		memcpy(resd_state + lightIndex, &state, sizeof(int));
@@ -251,12 +254,15 @@ void dealWithLights() {
 	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
 
 		MySpotlight* currentSpotlight = &spotlights[lightIndex];
+		currentSpotlight->computeEyeStuff();
 
-		float* lightOnePos = currentSpotlight->getPosition();
+		MyVec3 lightPos = currentSpotlight->getPosition();
+		float lightOnePos[4] = { lightPos.x, lightPos.y, lightPos.z, 1.0 };
 		multMatrixPoint(VIEW, lightOnePos, ress_pos + lightIndex * 4);
 
-		float* lightDirection = currentSpotlight->getDirection();
-		multMatrixPoint(VIEW, lightDirection, ress_dir + lightIndex * 4);
+		MyVec3 lightDirection = currentSpotlight->getDirection();
+		float lightOneDirection[4] = { lightDirection.x, lightDirection.y, lightDirection.z, 0.0 };
+		multMatrixPoint(VIEW, lightOneDirection, ress_dir + lightIndex * 4);
 
 		float angle = currentSpotlight->getConeAngle();
 		memcpy(ress_angle + lightIndex, &angle, sizeof(float));

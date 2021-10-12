@@ -9,16 +9,24 @@ enum class MyPointlightState { Off, On };
 class MyPointlight {
 public:
 
-	MyVec3 position;
+	// Eye Coordinates Attributes
+	MyVec3 position = MyVec3{ 0, 0, 0 };
+	// Light Attributes
 	MyPointlightState state;
+	// Object Attributes
+	MyVec3 positionVec;
+	std::vector<MyVec3Rotation> rotateVec;
+	std::vector<MyVec3> translationBeforeRotation = {};
 
 	MyPointlight();
-	MyPointlight(MyVec3 positionTemp, MyPointlightState stateTemp);
+	MyPointlight(MyVec3 positionVecTemp, std::vector<MyVec3Rotation> rotateVecTemp, std::vector<MyVec3> translationBeforeRotationTemp, MyPointlightState stateTemp);
 
 	void turnOn();
 	void turnOff();
 
-	float* getPosition();
+	void computeEyeStuff();
+
+	MyVec3 getPosition();
 	int getState();
 
 };

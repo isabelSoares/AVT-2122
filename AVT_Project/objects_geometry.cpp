@@ -42,10 +42,10 @@ void MyObject::render(VSShaderLib shader) {
 	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 	glUniform1f(loc, mesh.mat.shininess);
 	pushMatrix(MODEL);
+
 	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
 	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z);  }
 	scale(MODEL, scaleVec.x, scaleVec.y, scaleVec.z);
-
 	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
 
 	GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
@@ -265,6 +265,7 @@ void MyCar::tick() {
 	angleDegrees += rotationWheelAngle;
 
 	direction.x = float(cos((angleDegrees) / (180 / O_PI)));
+	direction.y = 0;
 	direction.z = float(sin((angleDegrees) / (180 / O_PI)));
 
 	// Update position
@@ -292,8 +293,13 @@ void MyCar::tick() {
 	}
 
 	for (int i = 0; i < 2; i++) {
-		spotlights[i]->direction = direction;
-		spotlights[i]->position = position + SPOTLIGHTS_TRANSLATION_VARIATION[i];
+
+		MyVec3 lightPosition = position;
+		std::vector<MyVec3Rotation> lightRotations = { SPOTLIGHT_ROTATION_VARIATION, MyVec3Rotation{float(-angleDegrees - 90), 1, 0, 0} };
+
+		spotlights[i]->positionVec = lightPosition;
+		spotlights[i]->rotateVec = lightRotations;
+		spotlights[i]->translationBeforeRotation = { SPOTLIGHTS_TRANSLATION_VARIATION[i] };
 	}
 }
 

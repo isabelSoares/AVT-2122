@@ -15,10 +15,12 @@
 
 #include "spotlight.h"
 
-MySpotlight::MySpotlight(MyVec3 positionTemp, MyVec3 directionTemp, float coneAngleTemp, MySpotlightState stateTemp) {
+MySpotlight::MySpotlight(MyVec3 positionVecTemp, std::vector<MyVec3Rotation> rotateVecTemp, std::vector<MyVec3> translationBeforeRotationTemp, float coneAngleTemp, MySpotlightState stateTemp) {
 
-	position = positionTemp;
-	direction = directionTemp;
+	positionVec = positionVecTemp;
+	rotateVec = rotateVecTemp;
+	translationBeforeRotation = translationBeforeRotationTemp;
+
 	coneAngle = coneAngleTemp;
 	state = stateTemp;
 };
@@ -26,18 +28,35 @@ MySpotlight::MySpotlight(MyVec3 positionTemp, MyVec3 directionTemp, float coneAn
 void MySpotlight::turnOn() { state = MySpotlightState::On; };
 void MySpotlight::turnOff() { state = MySpotlightState::Off;  };
 
-float* MySpotlight::getPosition() {
+void MySpotlight::computeEyeStuff() {
 
-	float positionW[4] = { position.x, position.y, position.z, 1.0f };
-	return positionW;
-};
+	pushMatrix(MODEL);
 
-float* MySpotlight::getDirection() {
+	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
+	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z); }
+	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
 
-		float directionW[4] = { direction.x, direction.y, direction.z, 0.0f };
-		return directionW;
-};
+	float positionToTranslate[4] = { 0, 0, 0, 1 };
+	float* positionTranslated = (float*)malloc(4 * sizeof(float));
+	pushMatrix(MODEL);
+	multMatrixPoint(MODEL, positionToTranslate, positionTranslated);
+	popMatrix(MODEL);
 
+	position = MyVec3{ positionTranslated[0], positionTranslated[1], positionTranslated[2] };
+
+	float directionToTranslate[4] = { 0, 0, -1, 0 };
+	float* directionTranslated = (float*)malloc(4 * sizeof(float));
+	pushMatrix(MODEL);
+	multMatrixPoint(MODEL, directionToTranslate, directionTranslated);
+	popMatrix(MODEL);
+
+	direction = MyVec3{ directionTranslated[0], directionTranslated[1], directionTranslated[2] };
+
+	popMatrix(MODEL);
+}
+
+MyVec3 MySpotlight::getPosition() { return position; };
+MyVec3 MySpotlight::getDirection() { return direction; };
 float MySpotlight::getConeAngle() { return coneAngle; }
 
 int MySpotlight::getState() { return (state == MySpotlightState::On) ? 1 : 0; }

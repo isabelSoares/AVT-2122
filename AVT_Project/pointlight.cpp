@@ -16,19 +16,36 @@
 
 #include "pointlight.h"
 
-MyPointlight::MyPointlight(MyVec3 positionTemp, MyPointlightState stateTemp) {
+MyPointlight::MyPointlight(MyVec3 positionVecTemp, std::vector<MyVec3Rotation> rotateVecTemp, std::vector<MyVec3> translationBeforeRotationTemp, MyPointlightState stateTemp) {
 
-	position = positionTemp;
+	positionVec = positionVecTemp;
+	rotateVec = rotateVecTemp;
+	translationBeforeRotation = translationBeforeRotationTemp;
+
 	state = stateTemp;
 };
 
 void MyPointlight::turnOn() { state = MyPointlightState::On; };
 void MyPointlight::turnOff() { state = MyPointlightState::Off;  };
 
-float* MyPointlight::getPosition() {
+void MyPointlight::computeEyeStuff() {
 
-	float positionW[4] = { position.x, position.y, position.z, 1.0f };
-	return positionW;
-};
+	pushMatrix(MODEL);
 
+	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
+	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z); }
+	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
+
+	float positionToTranslate[4] = { 0, 0, 0, 1 };
+	float * positionTranslated = (float*)malloc(4 * sizeof(float));
+	pushMatrix(MODEL);
+	multMatrixPoint(MODEL, positionToTranslate, positionTranslated);
+	popMatrix(MODEL);
+
+	position = MyVec3{ positionTranslated[0], positionTranslated[1], positionTranslated[2] };
+
+	popMatrix(MODEL);
+}
+
+MyVec3 MyPointlight::getPosition() { return position; };
 int MyPointlight::getState() { return (state == MyPointlightState::On) ? 1 : 0; }

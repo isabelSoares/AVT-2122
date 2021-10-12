@@ -12,7 +12,6 @@ public:
 	MyVec3 positionVec;
 	MyVec3 scaleVec;
 	std::vector<MyVec3Rotation> rotateVec;
-
 	std::vector<MyVec3> translationBeforeRotation = {};
 
 
@@ -68,9 +67,8 @@ public:
 	MyVec3Rotation WHEEL_ROTATION_VARIATION = MyVec3Rotation{ 90, 0, 0, 1 };
 	MyVec3 WHEELS_TRANSLATION_VARIATION[4] = { MyVec3{ 0.55, 0.58, 0.8 }, MyVec3{ 0.55, 0.58, -0.8 }, MyVec3{ 0.55, -0.58, 0.8 }, MyVec3{ 0.55, -0.58, -0.8 } };
 	// =====
-	MyVec3 SPOTLIGHT_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
-	MyVec3Rotation SPOTLIGHT_ROTATION_VARIATION = MyVec3Rotation{ 0, 0, 1, 0 };
-	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.45, 0, 1}, MyVec3{ -0.45, 0, 1} };
+	MyVec3Rotation SPOTLIGHT_ROTATION_VARIATION = MyVec3Rotation{ -5, 1, 0, 0 };
+	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.45, 1, -1}, MyVec3{ -0.45, 1, -1} };
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;

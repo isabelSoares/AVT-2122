@@ -25,10 +25,5 @@ MyDirectionalLight::MyDirectionalLight(MyVec3 directionTemp, MyDirectionalLightS
 void MyDirectionalLight::turnOn() { state = MyDirectionalLightState::On; };
 void MyDirectionalLight::turnOff() { state = MyDirectionalLightState::Off;  };
 
-float* MyDirectionalLight::getDirection() {
-
-	float directionW[4] = { direction.x, direction.y, direction.z, 0.0};
-	return directionW;
-};
-
+MyVec3 MyDirectionalLight::getDirection() { return direction; };
 int MyDirectionalLight::getState() { return (state == MyDirectionalLightState::On) ? 1 : 0; }

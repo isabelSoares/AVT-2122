@@ -72,6 +72,22 @@ void MyObject::render(VSShaderLib shader) {
 
 	popMatrix(MODEL);
 }
+MyVec3 MyObject::calculatePointInWorld(MyVec3 point) {
+	pushMatrix(MODEL);
+
+	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
+	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z); }
+	scale(MODEL, scaleVec.x, scaleVec.y, scaleVec.z);
+	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
+
+	float positionInArray[4] = { point.x, point.y, point.z , 1.0 };
+	float* positionTranslated = (float*)malloc(4 * sizeof(float));
+	multMatrixPoint(MODEL, positionInArray, positionTranslated);
+
+	popMatrix(MODEL);
+
+	return MyVec3{ positionTranslated[0], positionTranslated[1], positionTranslated[2] };
+}
 
 MyTable::MyTable() {}
 MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
@@ -100,10 +116,13 @@ void MyTable::render(VSShaderLib shader) {
 }
 
 MyRoad::MyRoad() {}
-MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float inner_cheerio_radius, float outter_cheerio_radius) {
+MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp) {
 
 	position = positionTemp;
 	scaling = MyVec3{ width, ROAD_HEIGHT, length };
+	innerCheerioRadius = innerCheerioRadiusTemp;
+	outterCheerioRadius = outterCheerioRadiusTemp;
+
 
 	MyMesh mainRoadMesh = createCube();
 
@@ -155,7 +174,7 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 					continue;
 				}
 
-				MyMesh cheerioMesh = createTorus(inner_cheerio_radius, outter_cheerio_radius, 25, 25);
+				MyMesh cheerioMesh = createTorus(innerCheerioRadius, outterCheerioRadius, 25, 25);
 
 				memcpy(cheerioMesh.mat.ambient, ambCheerio, 4 * sizeof(float));
 				memcpy(cheerioMesh.mat.diffuse, diffCheerio, 4 * sizeof(float));
@@ -165,7 +184,7 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 				cheerioMesh.mat.texCount = texcountCheerio;
 
 
-				MyVec3 cheerioPosition = position + MyVec3{ correctedMarginFactor * (width / 2 - outter_cheerio_radius), (outter_cheerio_radius - inner_cheerio_radius) * 2, currentPosition};
+				MyVec3 cheerioPosition = position + MyVec3{ correctedMarginFactor * (width / 2 - outterCheerioRadius), (outterCheerioRadius - innerCheerioRadius) * 2, currentPosition};
 				MyVec3 cheerioScale = MyVec3{ 1, 2, 1 };
 
 				MyObject cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
@@ -259,6 +278,30 @@ void MyCar::render(VSShaderLib shader) {
 
 MyVec3 MyCar::getPosition() {
 	return position;
+}
+std::vector<MyVec3> MyCar::getBoundRect() {
+
+	MyVec3 mainBlockWorldTop = mainBlock.calculatePointInWorld(MyVec3{ 0.5, 0.5, 0.5 });
+	MyVec3 mainBlockWorldBottom = mainBlock.calculatePointInWorld(MyVec3{ -0.5, -0.5, -0.5 });
+
+	MyVec3 minPosition = MyVec3{ std::min(mainBlockWorldBottom.x, mainBlockWorldTop.x), std::min(mainBlockWorldBottom.y, mainBlockWorldTop.y), std::min(mainBlockWorldBottom.z, mainBlockWorldTop.z) };
+	MyVec3 maxPosition = MyVec3{ std::max(mainBlockWorldBottom.x, mainBlockWorldTop.x), std::max(mainBlockWorldBottom.y, mainBlockWorldTop.y), std::max(mainBlockWorldBottom.z, mainBlockWorldTop.z) };
+
+	for (int i = 0; i < 4; i++) {
+
+		//MyMesh wheelMesh = createTorus(0.3, 0.45, 20, 20);
+
+		MyVec3 wheelWorldTop = wheels[i].calculatePointInWorld(MyVec3{ 0.45, (0.45 - 0.3) / 2, 0.45 });
+		MyVec3 wheelWorldBottom = wheels[i].calculatePointInWorld(MyVec3{ -0.45, -(0.45 - 0.3) / 2, -0.45 });
+
+		MyVec3 minWheelPosition = MyVec3{ std::min(wheelWorldBottom.x, wheelWorldTop.x), std::min(wheelWorldBottom.y, wheelWorldTop.y), std::min(wheelWorldBottom.z, wheelWorldTop.z) };
+		MyVec3 maxWheelPosition = MyVec3{ std::max(wheelWorldBottom.x, wheelWorldTop.x), std::max(wheelWorldBottom.y, wheelWorldTop.y), std::max(wheelWorldBottom.z, wheelWorldTop.z) };
+
+		minPosition = MyVec3{ std::min(minPosition.x, minWheelPosition.x), std::min(minPosition.y, minWheelPosition.y), std::min(minPosition.z, minWheelPosition.z) };
+		maxPosition = MyVec3{ std::max(maxPosition.x, maxWheelPosition.x), std::max(maxPosition.y, maxWheelPosition.y), std::max(maxPosition.z, maxWheelPosition.z) };
+	}
+
+	return { minPosition, maxPosition };
 }
 
 void MyCar::tick() {
@@ -390,6 +433,16 @@ void MyOrange::render(VSShaderLib shader) {
 
 MyVec3 MyOrange::getPosition() {
 	return orange.positionVec;
+}
+std::vector<MyVec3> MyOrange::getBoundRect() {
+
+	MyVec3 orangeWorldTop = orange.calculatePointInWorld(MyVec3{ 2, 2, 2 });
+	MyVec3 orangeWorldBottom = orange.calculatePointInWorld(MyVec3{ -2, -2, -2 });
+
+	MyVec3 minPosition = MyVec3{ std::min(orangeWorldBottom.x, orangeWorldTop.x), std::min(orangeWorldBottom.y, orangeWorldTop.y), std::min(orangeWorldBottom.z, orangeWorldTop.z) };
+	MyVec3 maxPosition = MyVec3{ std::max(orangeWorldBottom.x, orangeWorldTop.x), std::max(orangeWorldBottom.y, orangeWorldTop.y), std::max(orangeWorldBottom.z, orangeWorldTop.z) };
+
+	return { minPosition, maxPosition };
 }
 
 void MyOrange::tick() {

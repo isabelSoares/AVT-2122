@@ -22,6 +22,7 @@ public:
 	MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateVec);
 
 	void render(VSShaderLib shader);
+	MyVec3 calculatePointInWorld(MyVec3 point);
 };
 
 class MyTable {		
@@ -51,8 +52,11 @@ public:
 	MyVec3 scaling = MyVec3{ 1, 1, 1 };
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 
+	float innerCheerioRadius;
+	float outterCheerioRadius;
+
 	MyRoad();
-	MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float inner_cheerio_radius, float outter_cheerio_radius);
+	MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
 
 	void render(VSShaderLib shader);
 };
@@ -98,6 +102,7 @@ public:
 
 	void render(VSShaderLib shader);
 	MyVec3 getPosition();
+	std::vector<MyVec3> getBoundRect();
 
 	void tick();
 	void forward();
@@ -122,6 +127,7 @@ public:
 
 	void render(VSShaderLib shader);
 	MyVec3 getPosition();
+	std::vector<MyVec3> getBoundRect();
 
 	void tick();
 };

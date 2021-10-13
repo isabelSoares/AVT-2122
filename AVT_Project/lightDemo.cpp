@@ -117,7 +117,7 @@ int gameTime = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 15;
+const int NUMBER_ORANGES = 0;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
 // ======================================================================================
@@ -278,11 +278,18 @@ void dealWithLights() {
 
 void checkCollisions() {
 
-	MyVec3 carPosition = car.getPosition();
-	// Car with Oranges
-	for (int i = 0; i < NUMBER_ORANGES; i++) {
+	std::vector<MyVec3> carPositions = car.getBoundRect();
+	MyVec3 carMinPosition = carPositions[0];
+	MyVec3 carMaxPosition = carPositions[1];
 
-		MyVec3 currentOrangePosition = oranges[i].getPosition();
+	// Car with Oranges
+	for (int i = 0; i < NUMBER_ORANGES + 1; i++) {
+
+		std::vector<MyVec3> orangePositions = oranges[i].getBoundRect();
+		MyVec3 orangeMinPosition = orangePositions[0];
+		MyVec3 orangeMaxPosition = orangePositions[1];
+
+		printf("%f %f %f => %f %f %f\n", orangeMinPosition.x, orangeMinPosition.y, orangeMinPosition.z, orangeMaxPosition.x, orangeMaxPosition.y, orangeMaxPosition.z);
 		
 	}
 }

@@ -58,6 +58,8 @@ public:
 	MyRoad();
 	MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
 
+	std::vector<std::vector<MyVec3>> getBoundRects();
+
 	void render(VSShaderLib shader);
 };
 
@@ -72,7 +74,7 @@ public:
 	// ============ Car Object Attributes ============
 	MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 1, 1, 1.5 };
 	MyVec3Rotation MAIN_BLOCK_ROTATION_VARIATION = MyVec3Rotation{-90, 0, 1, 0};
-	MyVec3 MAIN_BLOCK_TRANSLATION_VARIATION = MyVec3{ 0, 0.95, 0};
+	MyVec3 MAIN_BLOCK_TRANSLATION_VARIATION = MyVec3{ 0, 0.35, 0};
 	// =====
 	MyVec3 WHEEL_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
 	MyVec3Rotation WHEEL_ROTATION_VARIATION = MyVec3Rotation{ 90, 0, 0, 1 };
@@ -101,10 +103,14 @@ public:
 	MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp);
 
 	void render(VSShaderLib shader);
+	void updateObjects();
+
 	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
 
 	void tick();
+	void untick();
+
 	void forward();
 	void backward();
 	void turnLeft();
@@ -139,6 +145,8 @@ public:
 
 	MyPacketButter();
 	MyPacketButter(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+
+	std::vector<MyVec3> getBoundRect();
 
 	void render(VSShaderLib shader);
 };

@@ -276,6 +276,16 @@ void dealWithLights() {
 	glUniform1iv(lsState_uniformId, NUMBER_SPOTLIGHTS, ress_state);
 }
 
+bool isCollision(MyVec3 minObject1, MyVec3 maxObject1, MyVec3 minObject2, MyVec3 maxObject2) {
+
+	bool xCollision = minObject1.x <= maxObject2.x && maxObject1.x >= minObject2.x;
+	bool yCollision = minObject1.y <= maxObject2.y && maxObject1.y >= minObject2.y;
+	bool zCollision = minObject1.z <= maxObject2.z && maxObject1.z >= minObject2.z;
+
+	return xCollision && yCollision && zCollision;
+
+}
+
 void checkCollisions() {
 
 	std::vector<MyVec3> carPositions = car.getBoundRect();
@@ -288,10 +298,28 @@ void checkCollisions() {
 		std::vector<MyVec3> orangePositions = oranges[i].getBoundRect();
 		MyVec3 orangeMinPosition = orangePositions[0];
 		MyVec3 orangeMaxPosition = orangePositions[1];
-
-		printf("%f %f %f => %f %f %f\n", orangeMinPosition.x, orangeMinPosition.y, orangeMinPosition.z, orangeMaxPosition.x, orangeMaxPosition.y, orangeMaxPosition.z);
-		
 	}
+
+	std::vector<MyVec3> butterPositions = butter.getBoundRect();
+	MyVec3 butterMinPosition = butterPositions[0];
+	MyVec3 butterMaxPosition = butterPositions[1];
+
+	std::vector<std::vector<MyVec3>> cheeriosBounds = road.getBoundRects();
+	for (std::vector<MyVec3> cheerioPositions : cheeriosBounds) {
+
+		MyVec3 cheerioMinPosition = cheerioPositions[0];
+		MyVec3 cheerioMaxPosition = cheerioPositions[1];
+
+	}
+
+	// printf("%f %f %f => %f %f %f\n", cheerioMinPosition.x, cheerioMinPosition.y, cheerioMinPosition.z, cheerioMaxPosition.x, cheerioMaxPosition.y, cheerioMaxPosition.z);
+	bool collisionButter = isCollision(carMinPosition, carMaxPosition, butterMinPosition, butterMaxPosition);
+	if (collisionButter) {
+		printf("COLLIDED!!\n");
+		car.untick();
+		car.velocity = 0; car.acceleration = 0;
+	}
+
 }
 
 // ------------------------------------------------------------
@@ -327,8 +355,6 @@ void renderScene(void) {
 			oranges[i] = MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1));
 		}
 	}
-	
-	checkCollisions();
 
 	// ====================================================================================
 
@@ -340,6 +366,8 @@ void renderScene(void) {
 
 	car.tick();
 	for (MyOrange& orange : oranges) { orange.tick(); }
+
+	checkCollisions();
 
 	// Update Car Camera
 	MyVec3 carPosition = car.getPosition();

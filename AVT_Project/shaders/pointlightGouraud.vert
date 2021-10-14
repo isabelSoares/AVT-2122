@@ -128,7 +128,7 @@ void main () {
 		finalLightsColor += intensity * mat.diffuse + spec;
 	}
 	
-	color = finalLightsColor;
-	// color = max(finalLightsColor, mat.ambient);
+	//color = finalLightsColor;
+	color = max(finalLightsColor, mat.ambient);
 
 }

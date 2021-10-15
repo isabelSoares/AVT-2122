@@ -288,6 +288,12 @@ bool isCollision(MyVec3 minObject1, MyVec3 maxObject1, MyVec3 minObject2, MyVec3
 
 void checkCollisions() {
 
+	enum class CollisionType { NONE, STOP, RESTART };
+	CollisionType collision = CollisionType::NONE;
+	std::vector<MyOrange*> collidedOranges = {};
+	std::vector<int> collidedCheerios = {};
+	std::vector<MyPacketButter*> collidedButters = {};
+
 	std::vector<MyVec3> carPositions = car.getBoundRect();
 	MyVec3 carMinPosition = carPositions[0];
 	MyVec3 carMaxPosition = carPositions[1];
@@ -298,26 +304,49 @@ void checkCollisions() {
 		std::vector<MyVec3> orangePositions = oranges[i].getBoundRect();
 		MyVec3 orangeMinPosition = orangePositions[0];
 		MyVec3 orangeMaxPosition = orangePositions[1];
+
+		// Test Collision: Car - Orange
+		if (isCollision(carMinPosition, carMaxPosition, orangeMinPosition, orangeMaxPosition)) {
+			collision = CollisionType::RESTART;
+			collidedOranges.push_back(&oranges[i]);
+		}
 	}
 
-	std::vector<MyVec3> butterPositions = butter.getBoundRect();
-	MyVec3 butterMinPosition = butterPositions[0];
-	MyVec3 butterMaxPosition = butterPositions[1];
-
+	// TODO: FIX THIS
+	int index = 0;
 	std::vector<std::vector<MyVec3>> cheeriosBounds = road.getBoundRects();
 	for (std::vector<MyVec3> cheerioPositions : cheeriosBounds) {
 
 		MyVec3 cheerioMinPosition = cheerioPositions[0];
 		MyVec3 cheerioMaxPosition = cheerioPositions[1];
 
+		if (isCollision(carMinPosition, carMaxPosition, cheerioMinPosition, cheerioMaxPosition)) {
+			collidedCheerios.push_back(index);
+			if (collision != CollisionType::RESTART) collision = CollisionType::STOP;
+		}
+
+		index += 1;
 	}
 
-	// printf("%f %f %f => %f %f %f\n", cheerioMinPosition.x, cheerioMinPosition.y, cheerioMinPosition.z, cheerioMaxPosition.x, cheerioMaxPosition.y, cheerioMaxPosition.z);
+	std::vector<MyVec3> butterPositions = butter.getBoundRect();
+	MyVec3 butterMinPosition = butterPositions[0];
+	MyVec3 butterMaxPosition = butterPositions[1];
+
 	bool collisionButter = isCollision(carMinPosition, carMaxPosition, butterMinPosition, butterMaxPosition);
-	if (collisionButter) {
-		printf("COLLIDED!!\n");
-		car.untick();
+	if (isCollision(carMinPosition, carMaxPosition, butterMinPosition, butterMaxPosition)) {
+
+		collidedButters.push_back(&butter);
+		if (collision != CollisionType::RESTART) collision = CollisionType::STOP;
+	}
+
+	// Update Car according to Collision
+	if (collision != CollisionType::NONE) {
 		car.velocity = 0; car.acceleration = 0;
+
+		if (collision == CollisionType::RESTART) { 
+			car.position = MyVec3{ 0, 0, 0 };
+			car.direction = MyVec3{ 0, 0, -1 };
+		}
 	}
 
 }
@@ -657,7 +686,7 @@ void init()
 		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1)));
 	}
-	butter = MyPacketButter(MyVec3{ 5.0f, 0.2f, 5.0f }, MyVec3{1.0f, 0.4f, 0.5f});
+	butter = MyPacketButter(MyVec3{ 5.0f, 0.6, 5.0f }, MyVec3{3.0f, 1.2f, 1.5f});
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

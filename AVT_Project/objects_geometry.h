@@ -74,7 +74,7 @@ public:
 	// ============ Car Object Attributes ============
 	MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 1, 1, 1.5 };
 	MyVec3Rotation MAIN_BLOCK_ROTATION_VARIATION = MyVec3Rotation{-90, 0, 1, 0};
-	MyVec3 MAIN_BLOCK_TRANSLATION_VARIATION = MyVec3{ 0, 0.35, 0};
+	MyVec3 MAIN_BLOCK_TRANSLATION_VARIATION = MyVec3{ 0, 0.95, 0};
 	// =====
 	MyVec3 WHEEL_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
 	MyVec3Rotation WHEEL_ROTATION_VARIATION = MyVec3Rotation{ 90, 0, 0, 1 };
@@ -109,7 +109,7 @@ public:
 	std::vector<MyVec3> getBoundRect();
 
 	void tick();
-	void untick();
+	void collisionStop();
 
 	void forward();
 	void backward();

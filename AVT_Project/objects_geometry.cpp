@@ -328,21 +328,22 @@ std::vector<MyVec3> MyCar::getBoundRect() {
 		maxPosition = MyVec3{ std::max(maxPosition.x, pointConverted.x), std::max(maxPosition.y, pointConverted.y), std::max(maxPosition.z, pointConverted.z) };
 	}
 
-	/*
 	for (int i = 0; i < 4; i++) {
 
 		//MyMesh wheelMesh = createTorus(0.3, 0.45, 20, 20);
+		std::vector<MyVec3> pointsToCheck = { MyVec3{ 0.45, (0.45 - 0.3) / 2, 0.45 }, MyVec3{ 0.45, (0.45 - 0.3) / 2, - 0.45 }, 
+											MyVec3{ 0.45, - (0.45 - 0.3) / 2, 0.45 }, MyVec3{ 0.45, - (0.45 - 0.3) / 2, - 0.45 }, 
+											MyVec3{ - 0.45, (0.45 - 0.3) / 2, 0.45 }, MyVec3{ - 0.45, (0.45 - 0.3) / 2, - 0.45 }, 
+											MyVec3{ -0.45, - (0.45 - 0.3) / 2, 0.45 }, MyVec3{ - 0.45, - (0.45 - 0.3) / 2, - 0.45 } };
 
-		MyVec3 wheelWorldTop = wheels[i].calculatePointInWorld(MyVec3{ 0.45, (0.45 - 0.3) / 2, 0.45 });
-		MyVec3 wheelWorldBottom = wheels[i].calculatePointInWorld(MyVec3{ -0.45, -(0.45 - 0.3) / 2, -0.45 });
+		for (MyVec3 point : pointsToCheck) {
 
-		MyVec3 minWheelPosition = MyVec3{ std::min(wheelWorldBottom.x, wheelWorldTop.x), std::min(wheelWorldBottom.y, wheelWorldTop.y), std::min(wheelWorldBottom.z, wheelWorldTop.z) };
-		MyVec3 maxWheelPosition = MyVec3{ std::max(wheelWorldBottom.x, wheelWorldTop.x), std::max(wheelWorldBottom.y, wheelWorldTop.y), std::max(wheelWorldBottom.z, wheelWorldTop.z) };
+			MyVec3 pointConverted = wheels[i].calculatePointInWorld(point);
 
-		minPosition = MyVec3{ std::min(minPosition.x, minWheelPosition.x), std::min(minPosition.y, minWheelPosition.y), std::min(minPosition.z, minWheelPosition.z) };
-		maxPosition = MyVec3{ std::max(maxPosition.x, maxWheelPosition.x), std::max(maxPosition.y, maxWheelPosition.y), std::max(maxPosition.z, maxWheelPosition.z) };
+			minPosition = MyVec3{ std::min(minPosition.x, pointConverted.x), std::min(minPosition.y, pointConverted.y), std::min(minPosition.z, pointConverted.z) };
+			maxPosition = MyVec3{ std::max(maxPosition.x, pointConverted.x), std::max(maxPosition.y, pointConverted.y), std::max(maxPosition.z, pointConverted.z) };
+		}
 	}
-	*/
 
 	return { minPosition, maxPosition };
 }
@@ -390,37 +391,7 @@ void MyCar::tick() {
 	updateObjects();
 }
 
-void MyCar::untick() {
-
-	// Update velocity
-	velocity = velocity - acceleration;
-
-	if (velocity > 0) velocity = std::max(velocity + FRICTION_COEFICIENT, 0.0f);
-	else if (velocity < 0) velocity = std::min(velocity - FRICTION_COEFICIENT, 0.0f);
-
-	// Update rotation
-	float velocityFactor = abs(velocity) / MAX_VELOCITY;
-	int rotationSignal = (signbit(rotationVelocity)) ? -1 : 1;
-	if (rotationVelocity == 0.0f) { rotationSignal = 0; }
-
-	if (rotationVelocity > 0) rotationVelocity = std::max(rotationVelocity + FRICTION_ROTATION_COEFICIENT, 0.0f);
-	else if (rotationVelocity < 0) rotationVelocity = std::min(rotationVelocity - FRICTION_ROTATION_COEFICIENT, 0.0f);
-
-	rotationWheelAngle = rotationVelocity * velocityFactor;
-	if (rotationWheelAngle >= MAX_WHEEL_ANGLE) { rotationWheelAngle = MAX_WHEEL_ANGLE; }
-	else if (rotationWheelAngle <= -MAX_WHEEL_ANGLE) { rotationWheelAngle = -MAX_WHEEL_ANGLE; }
-
-	// Update direction
-	float dot = 1 * direction.x + 0 * direction.z;
-	float det = 1 * direction.z - 0 * direction.x;
-	double angleRadians = atan2(det, dot);
-	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
-
-	angleDegrees -= rotationWheelAngle;
-
-	direction.x = float(cos((angleDegrees) / (180 / O_PI)));
-	direction.y = 0;
-	direction.z = float(sin((angleDegrees) / (180 / O_PI)));
+void MyCar::collisionStop() {
 
 	// Update position
 	position.x -= velocity * direction.x;
@@ -574,11 +545,20 @@ void MyPacketButter::render(VSShaderLib shader) {
 
 std::vector<MyVec3> MyPacketButter::getBoundRect() {
 
-	MyVec3 butterWorldTop = butter.calculatePointInWorld(MyVec3{ 0.5, 0.5, 0.5 });
-	MyVec3 butterWorldBottom = butter.calculatePointInWorld(MyVec3{ -0.5, -0.5, -0.5 });
+	std::vector<MyVec3> pointsToCheck = { MyVec3{ 0.5, 0.5, 0.5 }, MyVec3{ -0.5, 0.5, 0.5 } , MyVec3{ 0.5, -0.5, 0.5 } , MyVec3{ 0.5, 0.5, -0.5 } , MyVec3{ -0.5, -0.5, 0.5 } , MyVec3{ 0.5, -0.5, -0.5 } , MyVec3{ -0.5, 0.5, -0.5 } , MyVec3{ -0.5, -0.5, -0.5 } };
 
-	MyVec3 minPosition = MyVec3{ std::min(butterWorldBottom.x, butterWorldTop.x), std::min(butterWorldBottom.y, butterWorldTop.y), std::min(butterWorldBottom.z, butterWorldTop.z) };
-	MyVec3 maxPosition = MyVec3{ std::max(butterWorldBottom.x, butterWorldTop.x), std::max(butterWorldBottom.y, butterWorldTop.y), std::max(butterWorldBottom.z, butterWorldTop.z) };
+	MyVec3 tempWorld = butter.calculatePointInWorld(pointsToCheck[0]);
+
+	MyVec3 minPosition = tempWorld;
+	MyVec3 maxPosition = tempWorld;
+
+	for (MyVec3 point : pointsToCheck) {
+
+		MyVec3 pointConverted = butter.calculatePointInWorld(point);
+
+		minPosition = MyVec3{ std::min(minPosition.x, pointConverted.x), std::min(minPosition.y, pointConverted.y), std::min(minPosition.z, pointConverted.z) };
+		maxPosition = MyVec3{ std::max(maxPosition.x, pointConverted.x), std::max(maxPosition.y, pointConverted.y), std::max(maxPosition.z, pointConverted.z) };
+	}
 
 	return { minPosition, maxPosition };
 }

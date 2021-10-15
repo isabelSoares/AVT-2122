@@ -89,6 +89,84 @@ MyVec3 MyObject::calculatePointInWorld(MyVec3 point) {
 	return MyVec3{ positionTranslated[0], positionTranslated[1], positionTranslated[2] };
 }
 
+MyCheerio::MyCheerio() {}
+MyCheerio::MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp) {
+
+	position = positionTemp;
+	innerCheerioRadius = innerCheerioRadiusTemp;
+	outterCheerioRadius = outterCheerioRadiusTemp;
+
+	float ambCheerio[] = { 1.0f, 0.77f, 0.05f, 1.0f };
+	float diffCheerio[] = { 0.2f, 0.8f, 0.50f, 1.0f };
+	float specCheerio[] = { 0.8f, 0.2f, 0.8f, 1.0f };
+	float emissiveCheerio[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininessCheerio = 100.0f;
+	int texcountCheerio = 0;
+
+	MyMesh cheerioMesh = createTorus(innerCheerioRadius, outterCheerioRadius, 25, 25);
+
+	memcpy(cheerioMesh.mat.ambient, ambCheerio, 4 * sizeof(float));
+	memcpy(cheerioMesh.mat.diffuse, diffCheerio, 4 * sizeof(float));
+	memcpy(cheerioMesh.mat.specular, specCheerio, 4 * sizeof(float));
+	memcpy(cheerioMesh.mat.emissive, emissiveCheerio, 4 * sizeof(float));
+	cheerioMesh.mat.shininess = shininessCheerio;
+	cheerioMesh.mat.texCount = texcountCheerio;
+
+	MyVec3 cheerioPosition = position;
+	MyVec3 cheerioScale = MyVec3{ 1, 3, 1 };
+
+	cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
+}
+
+void MyCheerio::render(VSShaderLib shader) {
+	cheerio.render(shader);
+}
+
+MyVec3 MyCheerio::getPosition() {
+	return position;
+}
+std::vector<MyVec3> MyCheerio::getBoundRect() {
+
+	//MyMesh wheelMesh = createTorus(innerCheerioRadius, outterCheerioRadius, 25, 25);
+
+	std::vector<MyVec3> pointsToCheck = { MyVec3{ outterCheerioRadius, (outterCheerioRadius - innerCheerioRadius) / 2, outterCheerioRadius },
+											MyVec3{ outterCheerioRadius, (outterCheerioRadius - innerCheerioRadius) / 2, - outterCheerioRadius },
+											MyVec3{ outterCheerioRadius, - (outterCheerioRadius - innerCheerioRadius) / 2, outterCheerioRadius },
+											MyVec3{ outterCheerioRadius, - (outterCheerioRadius - innerCheerioRadius) / 2, - outterCheerioRadius },
+											MyVec3{ - outterCheerioRadius, (outterCheerioRadius - innerCheerioRadius) / 2, outterCheerioRadius },
+											MyVec3{ - outterCheerioRadius, (outterCheerioRadius - innerCheerioRadius) / 2, - outterCheerioRadius },
+											MyVec3{ - outterCheerioRadius, - (outterCheerioRadius - innerCheerioRadius) / 2, outterCheerioRadius },
+											MyVec3{ - outterCheerioRadius, - (outterCheerioRadius - innerCheerioRadius) / 2, - outterCheerioRadius } };
+
+	MyVec3 tempWorld = cheerio.calculatePointInWorld(pointsToCheck[0]);
+
+	MyVec3 minPosition = tempWorld;
+	MyVec3 maxPosition = tempWorld;
+
+	for (MyVec3 point : pointsToCheck) {
+
+		MyVec3 pointConverted = cheerio.calculatePointInWorld(point);
+
+		minPosition = MyVec3{ std::min(minPosition.x, pointConverted.x), std::min(minPosition.y, pointConverted.y), std::min(minPosition.z, pointConverted.z) };
+		maxPosition = MyVec3{ std::max(maxPosition.x, pointConverted.x), std::max(maxPosition.y, pointConverted.y), std::max(maxPosition.z, pointConverted.z) };
+	}
+
+	// Store this cheerio bounds
+	return { minPosition, maxPosition };
+}
+
+void MyCheerio::tick() {
+
+	velocity = velocity * (1 - FRICTION_COEFICIENT);
+
+	// Update position
+	position.x += velocity * direction.x;
+	position.y += velocity * direction.y;
+	position.z += velocity * direction.z;
+
+	cheerio.positionVec = position;
+}
+
 MyTable::MyTable() {}
 MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 
@@ -120,8 +198,6 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 
 	position = positionTemp;
 	scaling = MyVec3{ width, ROAD_HEIGHT, length };
-	innerCheerioRadius = innerCheerioRadiusTemp;
-	outterCheerioRadius = outterCheerioRadiusTemp;
 
 
 	MyMesh mainRoadMesh = createCube();
@@ -145,13 +221,6 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 
 	mainRoad = MyObject(mainRoadMesh, mainRoadTranslation, mainRoadScaling, {});
 
-	float ambCheerio[] = { 1.0f, 0.77f, 0.05f, 1.0f };
-	float diffCheerio[] = { 0.2f, 0.8f, 0.50f, 1.0f };
-	float specCheerio[] = { 0.8f, 0.2f, 0.8f, 1.0f };
-	float emissiveCheerio[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininessCheerio = 100.0f;
-	int texcountCheerio = 0;
-
 	// Left / Margin
 	for (int i = 0; i < 2; i++) {
 		
@@ -174,22 +243,9 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 					continue;
 				}
 
-				MyMesh cheerioMesh = createTorus(innerCheerioRadius, outterCheerioRadius, 25, 25);
-
-				memcpy(cheerioMesh.mat.ambient, ambCheerio, 4 * sizeof(float));
-				memcpy(cheerioMesh.mat.diffuse, diffCheerio, 4 * sizeof(float));
-				memcpy(cheerioMesh.mat.specular, specCheerio, 4 * sizeof(float));
-				memcpy(cheerioMesh.mat.emissive, emissiveCheerio, 4 * sizeof(float));
-				cheerioMesh.mat.shininess = shininessCheerio;
-				cheerioMesh.mat.texCount = texcountCheerio;
-
-
-				MyVec3 cheerioPosition = position + MyVec3{ correctedMarginFactor * (width / 2 - outterCheerioRadius), (outterCheerioRadius - innerCheerioRadius) * 2, currentPosition};
-				MyVec3 cheerioScale = MyVec3{ 1, 2, 1 };
-
-				MyObject cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
-				if (correctedMarginFactor == 1) rightMargin.push_back(cheerio);
-				else leftMargin.push_back(cheerio);
+				MyVec3 cheerioPosition = position + MyVec3{ correctedMarginFactor * (width / 2 - outterCheerioRadiusTemp), (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, currentPosition};
+				MyCheerio cheerio = MyCheerio(cheerioPosition, innerCheerioRadiusTemp, outterCheerioRadiusTemp);
+				cheerios.push_back(cheerio);
 
 				// Update next position
 				currentPosition = currentPosition + correctedPlacingFactor * cheerios_distance;
@@ -200,41 +256,14 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 
 void MyRoad::render(VSShaderLib shader) {
 	mainRoad.render(shader);
-	for (MyObject cheerio : leftMargin) cheerio.render(shader);
-	for (MyObject cheerio : rightMargin) cheerio.render(shader);
+	for (MyCheerio cheerio : cheerios) cheerio.render(shader);
 }
 
-std::vector<std::vector<MyVec3>> MyRoad::getBoundRects() {
-
-	std::vector<std::vector<MyVec3>> bounds = {};
-
-	// Left / Margin
-	for (int i = 0; i < 2; i++) {
-
-		// 1 = Right / -1 = Left
-		int correctedMarginFactor = i * 2 - 1;
-		std::vector<MyObject> cheerios;
-		if (correctedMarginFactor == 1) cheerios = rightMargin;
-		else cheerios = leftMargin;
-
-		for (MyObject cheerio : cheerios) {
-
-			//MyMesh wheelMesh = createTorus(innerCheerioRadius, outterCheerioRadius, 25, 25);
-
-			MyVec3 cheerioWorldTop = cheerio.calculatePointInWorld(MyVec3{ outterCheerioRadius, (outterCheerioRadius - innerCheerioRadius) / 2, outterCheerioRadius });
-			MyVec3 cherioWorldBottom = cheerio.calculatePointInWorld(MyVec3{ -outterCheerioRadius, -(outterCheerioRadius - innerCheerioRadius) / 2, -outterCheerioRadius });
-
-			MyVec3 minPosition = MyVec3{ std::min(cherioWorldBottom.x, cheerioWorldTop.x), std::min(cherioWorldBottom.y, cheerioWorldTop.y), std::min(cherioWorldBottom.z, cheerioWorldTop.z) };
-			MyVec3 maxPosition = MyVec3{ std::max(cherioWorldBottom.x, cheerioWorldTop.x), std::max(cherioWorldBottom.y, cheerioWorldTop.y), std::max(cherioWorldBottom.z, cheerioWorldTop.z) };
-
-			// Store this cheerio bounds
-			bounds.push_back({ minPosition, maxPosition });
-		}
-
-	}
-
-	return bounds;
+void MyRoad::tick() {
+	for (int index = 0; index < cheerios.size(); index++) cheerios[index].tick();
 }
+
+std::vector<MyCheerio> MyRoad::getCheerios() { return cheerios; }
 
 float MyCar::MAX_VELOCITY = 1.5f;
 float MyCar::START_ACCELERATION = 0.01f;
@@ -518,8 +547,11 @@ void MyOrange::tick() {
 }
 
 MyPacketButter::MyPacketButter() {}
-MyPacketButter::MyPacketButter(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+MyPacketButter::MyPacketButter(MyVec3 positionTemp, MyVec3 scaleTemp) {
 
+	position = positionTemp;
+	scaling = scaleTemp;
+	
 	MyMesh butterMesh = createCube();
 
 	float amb[] = { 1.0f, 1.0f, 0.2f, 1.0f };
@@ -536,11 +568,27 @@ MyPacketButter::MyPacketButter(MyVec3 initialPositionTemp, MyVec3 initialScaleTe
 	butterMesh.mat.shininess = shininess;
 	butterMesh.mat.texCount = texcount;
 
-	butter = MyObject(butterMesh, initialPositionTemp, initialScaleTemp, {});
+	butter = MyObject(butterMesh, position, scaling, {});
+}
+
+MyVec3 MyPacketButter::getPosition() {
+	return position;
 }
 
 void MyPacketButter::render(VSShaderLib shader) {
 	butter.render(shader);
+}
+
+void MyPacketButter::tick() {
+
+	velocity = velocity * (1 - FRICTION_COEFICIENT);
+
+	// Update position
+	position.x += velocity * direction.x;
+	position.y += velocity * direction.y;
+	position.z += velocity * direction.z;
+
+	butter.positionVec = position;
 }
 
 std::vector<MyVec3> MyPacketButter::getBoundRect() {

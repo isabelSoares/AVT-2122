@@ -10,12 +10,22 @@ struct MyVec3 {
 		return { a.x + x, a.y + y, a.z + z };
 	}
 
+	inline MyVec3 operator-(MyVec3 a) {
+		return { x - a.x, y - a.y, z - a.z };
+	}
+
 	inline MyVec3 operator*(MyVec3 a) {
 		return { a.x * x, a.y * y, a.z * z };
 	}
 
 	inline MyVec3 operator/(MyVec3 a) {
 		return { x / a.x, y / a.y , z / a.z};
+	}
+	
+	inline MyVec3 normalize() {
+
+		float length = sqrtf(pow(x, 2) + pow(y, 2) + pow(z, 2));
+		return { x / length, y / length, z / length };
 	}
 };
 

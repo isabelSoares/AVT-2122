@@ -37,13 +37,37 @@ public:
 	void render(VSShaderLib shader);
 };
 
+class MyCheerio {
+public:
+	// ============ Cheerio Objects ===============
+	MyObject cheerio;
+	// ============ Cheerio Attributes ============
+	float FRICTION_COEFICIENT = 0.02;
+	// ============ Cheerio Attributes ============
+	MyVec3 position;
+	MyVec3 direction = MyVec3{ 0, 0, -1 };
+	float velocity = 0.0f;
+
+	float innerCheerioRadius;
+	float outterCheerioRadius;
+
+	MyCheerio();
+	MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
+
+	void render(VSShaderLib shader);
+
+	MyVec3 getPosition();
+	std::vector<MyVec3> getBoundRect();
+
+	void tick();
+};
+
 class MyRoad {
 public:
 
 	// ============ Road Objects ============
 	MyObject mainRoad;
-	std::vector<MyObject> leftMargin = {};
-	std::vector<MyObject> rightMargin = {};
+	std::vector<MyCheerio> cheerios = {};
 	// ============ Road Object Attributes ============
 	float ROAD_HEIGHT = 0.3;
 	MyVec3 MARGIN_SCALING_VARIATION = MyVec3{ 0.2, 2, 1.01 };
@@ -52,15 +76,14 @@ public:
 	MyVec3 scaling = MyVec3{ 1, 1, 1 };
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 
-	float innerCheerioRadius;
-	float outterCheerioRadius;
-
 	MyRoad();
 	MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
 
-	std::vector<std::vector<MyVec3>> getBoundRects();
+	std::vector<MyCheerio> getCheerios();
 
 	void render(VSShaderLib shader);
+
+	void tick();
 };
 
 class MyCar {
@@ -142,12 +165,22 @@ class MyPacketButter {
 public:
 	// ============ Butter Packet Objects ===============
 	MyObject butter;
+	// ============ Butter Attributes ============
+	float FRICTION_COEFICIENT = 0.02;
+	// ============ Butter Attributes ============
+	MyVec3 position;
+	MyVec3 scaling = MyVec3{ 1, 1, 1 };
+	MyVec3 direction = MyVec3{ 0, 0, -1 };
+	float velocity = 0.0f;
 
 	MyPacketButter();
-	MyPacketButter(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+	MyPacketButter(MyVec3 positionTemp, MyVec3 scaleTemp);
 
+	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
 
 	void render(VSShaderLib shader);
+
+	void tick();
 };
 #endif

@@ -19,6 +19,8 @@ in vec4 normal;    //por causa do gerador de geometria
 in vec4 texCoord;
 
 out Data {
+	vec4 pos;
+
 	vec3 normal;
 	vec3 eye;
 	vec2 tex_coord;
@@ -35,6 +37,7 @@ out Data {
 void main () {
 
 	vec4 pos = m_viewModel * position;
+	DataOut.pos = pos;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	DataOut.eye = vec3(-pos);

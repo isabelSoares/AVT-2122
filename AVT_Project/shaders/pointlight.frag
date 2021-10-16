@@ -29,6 +29,8 @@ struct Materials {
 uniform Materials mat;
 
 in Data {
+	vec4 pos;
+
 	vec3 normal;
 	vec3 eye;
 	vec2 tex_coord;
@@ -41,6 +43,15 @@ in Data {
 	vec3 ls_directions[2];
 	vec3 ls_realDirections[2];
 } DataIn;
+
+//Exponential Fog:
+vec4 applyFog( in vec3 rgb, in float distance, in float alpha) {
+
+	float fogAmount = exp( -distance*0.05 );
+	vec3 fogColor = vec3(0.5,0.6,0.7);
+	vec3 final_color = mix(fogColor, rgb, fogAmount );
+	return vec4(final_color, alpha);
+}
 
 void main() {
 
@@ -129,4 +140,9 @@ void main() {
 
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
 	else colorOut = max(finalLightsColor, mat.ambient);
+
+	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
+
+	float dist = length(DataIn.pos);
+	colorOut = applyFog(vec3(colorOut), dist, colorOut.a);
 }

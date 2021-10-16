@@ -97,10 +97,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="materials\checker.png">
+    <Image Include="materials\lightwood.tga">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="materials\lightwood.tga">
+    <Image Include="materials\checker.jpg">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

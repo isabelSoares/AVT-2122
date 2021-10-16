@@ -331,7 +331,6 @@ MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 		spotlights[i]->direction = direction;
 		spotlights[i]->position = position + SPOTLIGHTS_TRANSLATION_VARIATION[i];
 	}
-
 }
 
 void MyCar::render(VSShaderLib shader) {
@@ -559,7 +558,7 @@ MyPacketButter::MyPacketButter(MyVec3 positionTemp, MyVec3 scaleTemp) {
 	MyMesh butterMesh = createCube();
 
 	float amb[] = { 1.0f, 1.0f, 0.2f, 1.0f };
-	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
+	float diff[] = { 0.6f, 0.1f, 0.3f, 0.7f };
 	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float shininess = 100.0f;

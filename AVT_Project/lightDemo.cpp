@@ -409,10 +409,14 @@ void renderScene(void) {
 
 	// ====================================================================================
 
+	// Non Transparent Objects
+	//glDepthMask(GL_TRUE);
 	table.render(shader);
 	road.render(shader);
-	car.render(shader);
 	for (MyOrange& orange : oranges) { orange.render(shader); }
+	car.render(shader);
+	// Trasparent Objects
+	//glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
 
 	car.tick();
@@ -714,7 +718,7 @@ void init()
 	ilInit();
 
 	glGenTextures(2, TextureArray);
-	Texture2D_Loader(TextureArray, "./materials/checker.png", 0);
+	Texture2D_Loader(TextureArray, "./materials/checker.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 
 	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
@@ -734,6 +738,10 @@ void init()
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
 	glClearColor(0.098f, 0.098f, 0.439f, 1.0f);
+
+	// Blending Stuff
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 
 }
 

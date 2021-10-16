@@ -5,7 +5,7 @@ uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
 // Pointlights
-uniform vec4 lp_positions[2];
+uniform vec4 lp_positions[6];
 
 // Directional Lights
 uniform vec4 ld_directions[1];
@@ -26,7 +26,7 @@ out Data {
 	vec2 tex_coord;
 
 	// Pointlights
-	vec3 lp_directions[2];
+	vec3 lp_directions[6];
 	// Directional Lights
 	vec3 ld_directions[1];
 	// Spotlights

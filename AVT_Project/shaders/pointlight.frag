@@ -8,7 +8,7 @@ uniform sampler2D texmap1;
 uniform int texMode;
 
 // Pointlights
-uniform int lp_states[2];
+uniform int lp_states[6];
 
 // Directional Lights
 uniform int ld_states[1];
@@ -36,7 +36,7 @@ in Data {
 	vec2 tex_coord;
 
 	// Pointlights
-	vec3 lp_directions[2];
+	vec3 lp_directions[6];
 	// Directional Lights
 	vec3 ld_directions[1];
 	// Spotlights

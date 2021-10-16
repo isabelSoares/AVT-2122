@@ -4,6 +4,7 @@
 #define O_PI       3.14159265358979323846f
 
 #include "spotlight.h"
+#include "pointlight.h"
 
 enum class MyTextureOption { None, One, Two, Multitexturing };
 
@@ -184,6 +185,29 @@ public:
 	std::vector<MyVec3> getBoundRect();
 
 	void render(VSShaderLib shader);
+
+	void tick();
+};
+
+class MyCandle {
+public:
+	// ============ Candle Objects ===============
+	MyObject candle;
+
+	MyPointlight* light;
+	// ============ Candle Attributes ============
+	MyVec3 position;
+	MyVec3 scaling = MyVec3{ 1, 1, 1};
+
+	float height;
+	float radius;
+
+
+	MyCandle();
+	MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPointlight* lightTemp);
+
+	void render(VSShaderLib shader);
+	MyVec3 getPosition();
 
 	void tick();
 };

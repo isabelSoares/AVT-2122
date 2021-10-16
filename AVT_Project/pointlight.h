@@ -2,8 +2,6 @@
 #ifndef POINTLIGHT_H
 #define POINTLIGHT_H
 
-#include "objects_geometry.h"
-
 enum class MyPointlightState { Off, On };
 
 class MyPointlight {

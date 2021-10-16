@@ -15,6 +15,7 @@
 #include "VSShaderlib.h"
 
 #include "spotlight.h"
+#include "pointlight.h"
 #include "objects_geometry.h"
 
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
@@ -391,7 +392,7 @@ void MyCar::tick() {
 	else if (velocity < 0) velocity = std::min(velocity + FRICTION_COEFICIENT, 0.0f);
 
 	// Update rotation
-	float velocityFactor = abs(velocity) / MAX_VELOCITY;
+	float velocityFactor = velocity / MAX_VELOCITY;
 	int rotationSignal = (signbit(rotationVelocity)) ? -1 : 1;
 	if (rotationVelocity == 0.0f) { rotationSignal = 0; }
 
@@ -612,4 +613,41 @@ std::vector<MyVec3> MyPacketButter::getBoundRect() {
 	}
 
 	return { minPosition, maxPosition };
+}
+
+MyCandle::MyCandle() {}
+MyCandle::MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPointlight* lightTemp) {
+
+	position = positionTemp;
+	height = heightTemp;
+	radius = radiusTemp;
+	light = lightTemp;
+	
+	MyMesh candleMesh = createCylinder(height, radius, 20);
+
+	float amb[] = { 1.0f, 1.0f, 0.2f, 1.0f };
+	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
+	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
+	int texcount = 0;
+
+	memcpy(candleMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(candleMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(candleMesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(candleMesh.mat.emissive, emissive, 4 * sizeof(float));
+	candleMesh.mat.shininess = shininess;
+	candleMesh.mat.texCount = texcount;
+
+	candle = MyObject(candleMesh, position + MyVec3{0, height / 2, 0}, scaling, {});
+
+	light->positionVec = MyVec3{position.x, position.y + height + 0.5f, position.z};
+}
+
+MyVec3 MyCandle::getPosition() {
+	return position;
+}
+
+void MyCandle::render(VSShaderLib shader) {
+	candle.render(shader);
 }

@@ -63,6 +63,7 @@ MyRoad road;
 MyCar car;
 std::vector<MyOrange> oranges;
 std::vector<MyPacketButter> butters;
+std::vector<MyCandle> candles;
 
 // ======================================================================================
 
@@ -103,11 +104,15 @@ MyDirectionalLight directionalLights[NUMBER_DIRECTIONAL_LIGHTS] = {
 	MyDirectionalLight(MyVec3{0, -1, 1}, MyDirectionalLightState::Off),
 };
 
-const int NUMBER_POINTLIGHTS = 2;
+const int NUMBER_POINTLIGHTS = 6;
 
 MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
-	MyPointlight(MyVec3{20, 1, -10}, {}, {}, MyPointlightState::On),
-	MyPointlight(MyVec3{-20, 1, -10}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{0, 0, 0}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{0, 0, 0}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{0, 0, 0}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{0, 0, 0}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{0, 0, 0}, {}, {}, MyPointlightState::On),
+	MyPointlight(MyVec3{0, 0, 0}, {}, {}, MyPointlightState::On),
 };
 
 // =====================================================================================
@@ -414,6 +419,7 @@ void renderScene(void) {
 	table.render(shader);
 	road.render(shader);
 	for (MyOrange& orange : oranges) { orange.render(shader); }
+	for (MyCandle& candle : candles) { candle.render(shader); }
 	car.render(shader);
 	// Trasparent Objects
 	//glDepthMask(GL_FALSE);
@@ -732,6 +738,9 @@ void init()
 		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1)));
 	}
 	butters = { MyPacketButter(MyVec3{ 5.0f, 0.6, 5.0f }, MyVec3{3.0f, 1.2f, 1.5f}) };
+	candles = { MyCandle(MyVec3{20, 0, -10}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{-20, 0, -10}, 2, 0.4, &pointlights[1]),
+				MyCandle(MyVec3{20, 0, -20}, 2, 0.4, &pointlights[2]), MyCandle(MyVec3{-20, 0, -20}, 2, 0.4, &pointlights[3]),
+				MyCandle(MyVec3{30, 0, -30}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{-30, 0, -30}, 2, 0.4, &pointlights[5])};
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

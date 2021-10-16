@@ -26,7 +26,6 @@ MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::
 	positionVec = positionTemp;
 	scaleVec = scaleTemp;
 	rotateVec = rotateTemp;
-
 }
 
 void MyObject::render(VSShaderLib shader) {
@@ -52,6 +51,10 @@ void MyObject::render(VSShaderLib shader) {
 	GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	GLint normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	GLint lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
+	GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
+
+	if (textureOption == MyTextureOption::Multitexturing) glUniform1i(texMode_uniformId, 3);
+	else glUniform1i(texMode_uniformId, 0);
 
 	// send matrices to OGL
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -172,9 +175,9 @@ MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 
 	MyMesh tableTopMesh = createCube();
 
-	float amb[] = { 0.2f, 0.50f, 0.1f, 1.0f };
-	float diff[] = { 0.8f, 0.1f, 0.4f, 1.0f };
-	float spec[] = { 0.8f, 0.2f, 0.8f, 1.0f };
+	float amb[] = { 0.3f, 0.0f, 0.0f, 1.0f };
+	float diff[] = { 0.8f, 0.1f, 0.1f, 1.0f };
+	float spec[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float shininess = 100.0f;
 	int texcount = 0;
@@ -187,6 +190,7 @@ MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	tableTopMesh.mat.texCount = texcount;
 
 	tableTop = MyObject(tableTopMesh, initialPositionTemp, initialScaleTemp, {});
+	tableTop.textureOption = MyTextureOption::Multitexturing;
 }
 
 void MyTable::render(VSShaderLib shader) {

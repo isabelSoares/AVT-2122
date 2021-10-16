@@ -5,6 +5,8 @@
 
 #include "spotlight.h"
 
+enum class MyTextureOption { None, One, Two, Multitexturing };
+
 class MyObject {
 
 public:
@@ -13,6 +15,8 @@ public:
 	MyVec3 scaleVec;
 	std::vector<MyVec3Rotation> rotateVec;
 	std::vector<MyVec3> translationBeforeRotation = {};
+
+	MyTextureOption textureOption = MyTextureOption::None;
 
 
 	// Display

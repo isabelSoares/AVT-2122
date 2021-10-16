@@ -96,4 +96,12 @@
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="materials\checker.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="materials\lightwood.tga">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

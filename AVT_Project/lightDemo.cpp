@@ -11,6 +11,9 @@
 // You may use it, or parts of it, wherever you want.
 //
 
+#pragma comment(lib, "DevIL.lib")
+#pragma comment(lib, "ILU.lib")
+
 #include <math.h>
 #include <iostream>
 #include <sstream>
@@ -19,16 +22,18 @@
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
-
-
 // GLUT is the toolkit to interface with the OS
 #include <GL/freeglut.h>
+
+#include <IL/il.h>
 
 // Use Very Simple Libs
 #include "VSShaderlib.h"
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
 #include "geometry.h"
+#include "Texture_Loader.h"
+
 #include "camera.h"
 
 #include "spotlight.h"
@@ -148,7 +153,11 @@ GLint lsPos_uniformId;
 GLint lsDirection_uniformId;
 GLint lsAngle_uniformId;
 GLint lsState_uniformId;
-	
+
+// Textures UniformID
+GLint tex_loc0, tex_loc1;
+GLint texMode_uniformId;
+GLuint TextureArray[2];
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -374,6 +383,16 @@ void renderScene(void) {
 	// use our shader
 	glUseProgram(shader.getProgramIndex());
 
+	// Deal with Textures
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glUniform1i(tex_loc0, 0);
+	glUniform1i(tex_loc1, 1);
+
 	dealWithLights();
 
 	// ================================ Check Position Oranges ================================
@@ -411,6 +430,7 @@ void renderScene(void) {
 	carCamera.lookAtPosition = carPosition;
 	currentCamera->updateCamera();
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -632,14 +652,14 @@ GLuint setupShaders() {
 	shader.init();
 	// shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight.vert");
 	// shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight.frag");
-	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlightGouraud.vert");
-	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlightGouraud.frag");
+	shader.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/pointlight.vert");
+	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight.frag");
 
 	// set semantics for the shader variables
 	glBindFragDataLocation(shader.getProgramIndex(), 0,"colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 
@@ -660,7 +680,12 @@ GLuint setupShaders() {
 	lsDirection_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_directions");
 	lsAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_angles");
 	lsState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "ls_states");
-	
+
+	// Textures Get UniformID
+	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
+	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
+	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
+
 	// printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	printf("InfoLog for Per Fragment Gouraud Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	
@@ -680,6 +705,17 @@ void init()
 		camera->position.z = camera->r * cos(camera->alpha * 3.14f / 180.0f) * cos(camera->beta * 3.14f / 180.0f);
 		camera->position.y = camera->r * sin(camera->beta * 3.14f / 180.0f);
 	}
+
+	if (ilGetInteger(IL_VERSION_NUM) < IL_VERSION) {
+		printf("wrong DevIL version \n");
+		exit(0);
+	}
+
+	ilInit();
+
+	glGenTextures(2, TextureArray);
+	Texture2D_Loader(TextureArray, "./materials/checker.png", 0);
+	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 
 	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
 	road = MyRoad(MyVec3{ 0, 0, 0 }, 20, TABLE_SIZE + 0.2, 2.5, 0.6, 0.8);

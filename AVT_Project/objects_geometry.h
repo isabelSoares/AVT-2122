@@ -6,7 +6,7 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange };
 
 class MyObject {
 
@@ -154,6 +154,7 @@ public:
 	// ============ Orange Attributes ============
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 	float velocity = 0.0f;
+	float angleRotated = 0.0f;
 
 	MyOrange();
 	MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float maxVelocity);

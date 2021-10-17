@@ -55,6 +55,7 @@ void MyObject::render(VSShaderLib shader) {
 	GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 
 	if (textureOption == MyTextureOption::Multitexturing) glUniform1i(texMode_uniformId, 3);
+	else if (textureOption == MyTextureOption::Orange) glUniform1i(texMode_uniformId, 4);
 	else glUniform1i(texMode_uniformId, 0);
 
 	// send matrices to OGL
@@ -497,8 +498,8 @@ MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float ma
 	float randomFloat = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	velocity = (randomFloat * 0.8 + 0.2) * maxVelocity;
 
-
 	orange = MyObject(orangeMesh, initialPositionTemp, initialScaleTemp, {});
+	orange.textureOption = MyTextureOption::Orange;
 }
 
 void MyOrange::render(VSShaderLib shader) {
@@ -521,10 +522,23 @@ std::vector<MyVec3> MyOrange::getBoundRect() {
 
 void MyOrange::tick() {
 
+	// Update direction
+	float dot = 1 * direction.x + 0 * direction.z;
+	float det = 1 * direction.z - 0 * direction.x;
+	double angleRadians = atan2(det, dot);
+	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
+
+	direction.x = float(cos((angleDegrees) / (180 / O_PI)));
+	direction.y = 0;
+	direction.z = float(sin((angleDegrees) / (180 / O_PI)));
+
 	// Update positions
 	orange.positionVec.x += velocity * direction.x;
 	orange.positionVec.y += velocity * direction.y;
 	orange.positionVec.z += velocity * direction.z;
+
+	angleRotated += velocity * 13;
+	orange.rotateVec = { MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0}, MyVec3Rotation{- angleRotated, 1, 0, 0} };
 }
 
 MyPacketButter::MyPacketButter() {}

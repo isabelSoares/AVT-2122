@@ -78,7 +78,7 @@ const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
 MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 5, 0 }, MyVec3{ 0, 0, 0 });
-MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 20.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 50.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
 MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0});
 
 std::vector<MyCamera*> cameras = {
@@ -127,7 +127,7 @@ int gameTime = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 0;
+const int NUMBER_ORANGES = 15;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
 // ======================================================================================
@@ -160,9 +160,9 @@ GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 
 // Textures UniformID
-GLint tex_loc0, tex_loc1;
+GLint tex_loc0, tex_loc1, tex_loc2;
 GLint texMode_uniformId;
-GLuint TextureArray[2];
+GLuint TextureArray[3];
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -310,7 +310,7 @@ void checkCollisions() {
 	MyVec3 carMaxPosition = carPositions[1];
 
 	// Car with Oranges
-	for (int i = 0; i < NUMBER_ORANGES + 1; i++) {
+	for (int i = 0; i < NUMBER_ORANGES; i++) {
 
 		std::vector<MyVec3> orangePositions = oranges[i].getBoundRect();
 		MyVec3 orangeMinPosition = orangePositions[0];
@@ -395,8 +395,12 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
 
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
+	glUniform1i(tex_loc2, 2);
 
 	dealWithLights();
 
@@ -695,6 +699,7 @@ GLuint setupShaders() {
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
+	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 
 	// printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	printf("InfoLog for Per Fragment Gouraud Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
@@ -723,15 +728,16 @@ void init()
 
 	ilInit();
 
-	glGenTextures(2, TextureArray);
+	glGenTextures(3, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/checker.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
+	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
 
 	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, TABLE_SIZE + 0.2, 2.5, 0.4, 0.8);
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
 	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
-	oranges = { MyOrange(MyVec3{0, 2.0, -10.0}, MyVec3{1, 1, 1}, 0) };
+	oranges = {};
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
 		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;

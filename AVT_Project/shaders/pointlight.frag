@@ -4,6 +4,7 @@ out vec4 colorOut;
 
 uniform sampler2D texmap0;
 uniform sampler2D texmap1;
+uniform sampler2D texmap2;
 
 uniform int texMode;
 
@@ -60,11 +61,12 @@ void main() {
 	vec3 n = normalize(DataIn.normal);
 	vec3 e = normalize(DataIn.eye);
 
-	vec4 texel0, texel1;
+	vec4 texel0, texel1, texel2;
 	
 	if (texMode != 0) {
 		texel0 = texture(texmap0, DataIn.tex_coord);  // texel from checker.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from lighwood.tga
+		texel2 = texture(texmap2, DataIn.tex_coord);  // texel from orange.jpg
 	}
 
 	// ============================== =================== ==============================
@@ -91,6 +93,7 @@ void main() {
 		}
 
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
+		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else finalLightsColor += intensity * mat.diffuse + spec;
 	}
 
@@ -112,6 +115,7 @@ void main() {
 		}
 
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
+		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else finalLightsColor += intensity * mat.diffuse + spec;
 	}
 
@@ -133,12 +137,14 @@ void main() {
 		}
 
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
+		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else finalLightsColor += intensity * mat.diffuse + spec;
 	}
 
 	colorOut = finalLightsColor;
 
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
+	else if (texMode == 4) colorOut = max(finalLightsColor, 0.37 * texel2 );
 	else colorOut = max(finalLightsColor, mat.ambient);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);

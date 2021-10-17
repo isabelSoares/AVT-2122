@@ -192,6 +192,7 @@
   <ItemGroup>
     <Image Include="materials\checker.jpg" />
     <Image Include="materials\lightwood.tga" />
+    <Image Include="materials\orange.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

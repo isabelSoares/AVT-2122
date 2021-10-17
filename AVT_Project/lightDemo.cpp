@@ -94,8 +94,8 @@ std::vector<MyCamera*> cameras = {
 const int NUMBER_SPOTLIGHTS = 2;
 
 MySpotlight spotlights[NUMBER_SPOTLIGHTS] = {
-	MySpotlight(MyVec3{0, 0, 0}, {}, {}, 5, MySpotlightState::Off),
-	MySpotlight(MyVec3{0, 0, 0}, {}, {}, 5, MySpotlightState::Off),
+	MySpotlight(MyVec3{0, 0, 0}, {}, {}, 20, MySpotlightState::Off),
+	MySpotlight(MyVec3{0, 0, 0}, {}, {}, 20, MySpotlightState::Off),
 };
 
 const int NUMBER_DIRECTIONAL_LIGHTS = 1;
@@ -727,8 +727,8 @@ void init()
 	Texture2D_Loader(TextureArray, "./materials/checker.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 
-	table = MyTable(MyVec3{ 0, -0.2, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
-	road = MyRoad(MyVec3{ 0, 0, 0 }, 20, TABLE_SIZE + 0.2, 2.5, 0.6, 0.8);
+	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, TABLE_SIZE + 0.2, 2.5, 0.4, 0.8);
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
 	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
 	oranges = { MyOrange(MyVec3{0, 2.0, -10.0}, MyVec3{1, 1, 1}, 0) };

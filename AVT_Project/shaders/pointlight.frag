@@ -136,7 +136,7 @@ void main() {
 		else finalLightsColor += intensity * mat.diffuse + spec;
 	}
 
-	// colorOut = finalLightsColor;
+	colorOut = finalLightsColor;
 
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
 	else colorOut = max(finalLightsColor, mat.ambient);

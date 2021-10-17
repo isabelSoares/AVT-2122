@@ -101,10 +101,10 @@ MyCheerio::MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float ou
 	outterCheerioRadius = outterCheerioRadiusTemp;
 
 	float ambCheerio[] = { 1.0f, 0.77f, 0.05f, 1.0f };
-	float diffCheerio[] = { 0.2f, 0.8f, 0.50f, 1.0f };
-	float specCheerio[] = { 0.8f, 0.2f, 0.8f, 1.0f };
+	float diffCheerio[] = { 1.0f, 1.0f, 0.30f, 1.0f };
+	float specCheerio[] = { 1.0f, 1.0f, 0.28f, 1.0f };
 	float emissiveCheerio[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininessCheerio = 100.0f;
+	float shininessCheerio = 25.0f;
 	int texcountCheerio = 0;
 
 	MyMesh cheerioMesh = createTorus(innerCheerioRadius, outterCheerioRadius, 25, 25);
@@ -176,11 +176,11 @@ MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 
 	MyMesh tableTopMesh = createCube();
 
-	float amb[] = { 0.3f, 0.0f, 0.0f, 1.0f };
-	float diff[] = { 0.8f, 0.1f, 0.1f, 1.0f };
+	float amb[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+	float diff[] = { 0.1f, 0.1f, 0.1f, 1.0f };
 	float spec[] = { 0.3f, 0.3f, 0.3f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 100.0f;
+	float shininess = 20.0f;
 	int texcount = 0;
 
 	memcpy(tableTopMesh.mat.ambient, amb, 4 * sizeof(float));
@@ -203,28 +203,6 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 
 	position = positionTemp;
 	scaling = MyVec3{ width, ROAD_HEIGHT, length };
-
-
-	MyMesh mainRoadMesh = createCube();
-
-	float ambRoad[] = { 0.66f, 0.66f, 0.66f, 1.0f };
-	float diffRoad[] = { 0.2f, 0.2f, 0.1f, 1.0f };
-	float specRoad[] = { 0.8f, 0.50f, 0.8f, 1.0f };
-	float emissiveRoad[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininessRoad = 100.0f;
-	int texcountRoad = 0;
-
-	memcpy(mainRoadMesh.mat.ambient, ambRoad, 4 * sizeof(float));
-	memcpy(mainRoadMesh.mat.diffuse, diffRoad, 4 * sizeof(float));
-	memcpy(mainRoadMesh.mat.specular, specRoad, 4 * sizeof(float));
-	memcpy(mainRoadMesh.mat.emissive, emissiveRoad, 4 * sizeof(float));
-	mainRoadMesh.mat.shininess = shininessRoad;
-	mainRoadMesh.mat.texCount = texcountRoad;
-
-	MyVec3 mainRoadScaling = scaling;
-	MyVec3 mainRoadTranslation = position;
-
-	mainRoad = MyObject(mainRoadMesh, mainRoadTranslation, mainRoadScaling, {});
 
 	// Left / Margin
 	for (int i = 0; i < 2; i++) {
@@ -260,7 +238,6 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 }
 
 void MyRoad::render(VSShaderLib shader) {
-	mainRoad.render(shader);
 	for (MyCheerio cheerio : cheerios) cheerio.render(shader);
 }
 
@@ -286,10 +263,10 @@ MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 	MyMesh mainBlockMesh = createCube();
 
 	float ambBlock[] = { 0.1f, 0.5f, 0.9f, 1.0f };
-	float diffBlock[] = { 0.6f, 0.1f, 0.3f, 1.0f };
-	float specBlock[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float diffBlock[] = { 0.0f, 0.5f, 1.0f, 1.0f };
+	float specBlock[] = { 0.0f, 0.6f, 1.0f, 1.0f };
 	float emissiveBlock[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininessBlock = 100.0f;
+	float shininessBlock = 75.0f;
 	int texcountBlock = 0;
 
 	memcpy(mainBlockMesh.mat.ambient, ambBlock, 4 * sizeof(float));
@@ -302,10 +279,10 @@ MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 	mainBlock = MyObject(mainBlockMesh, position + MAIN_BLOCK_TRANSLATION_VARIATION, scaling * MAIN_BLOCK_SCALING_VARIATION, {MAIN_BLOCK_ROTATION_VARIATION});
 
 	float ambWheel[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float diffWheel[] = { 0.6f, 0.1f, 0.3f, 1.0f };
-	float specWheel[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float diffWheel[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+	float specWheel[] = { 0.2f, 0.2f, 0.2f, 1.0f };
 	float emissiveWheel[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininessWheel = 100.0f;
+	float shininessWheel = 40.0f;
 	int texcountWheel = 0;
 
 	for (int i = 0; i < 4; i++) {
@@ -462,7 +439,7 @@ void MyCar::updateObjects() {
 	for (int i = 0; i < 2; i++) {
 
 		MyVec3 lightPosition = position;
-		std::vector<MyVec3Rotation> lightRotations = { SPOTLIGHT_ROTATION_VARIATION, MyVec3Rotation{float(-angleDegrees - 90), 1, 0, 0} };
+		std::vector<MyVec3Rotation> lightRotations = { SPOTLIGHT_ROTATION_VARIATION, MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0} };
 
 		spotlights[i]->positionVec = lightPosition;
 		spotlights[i]->rotateVec = lightRotations;
@@ -498,10 +475,10 @@ MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float ma
 	MyMesh orangeMesh = createSphere(2.0, 50);
 
 	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
-	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
-	float spec[] = { 0.0f, 0.0f, 1.0f, 1.0f };
+	float diff[] = { 0.8f, 0.40f, 0.0f, 1.0f };
+	float spec[] = { 0.3f, 0.15f, 0.0f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 250.0f;
+	float shininess = 50.0f;
 	int texcount = 0;
 
 	memcpy(orangeMesh.mat.ambient, amb, 4 * sizeof(float));
@@ -559,10 +536,10 @@ MyPacketButter::MyPacketButter(MyVec3 positionTemp, MyVec3 scaleTemp) {
 	MyMesh butterMesh = createCube();
 
 	float amb[] = { 1.0f, 1.0f, 0.2f, 1.0f };
-	float diff[] = { 0.6f, 0.1f, 0.3f, 0.7f };
-	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float diff[] = { 0.8f, 0.8f, 0.20f, 0.7f };
+	float spec[] = { 0.8f, 0.8f, 0.18f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float shininess = 100.0f;
+	float shininess = 70.0f;
 	int texcount = 0;
 
 	memcpy(butterMesh.mat.ambient, amb, 4 * sizeof(float));
@@ -626,8 +603,8 @@ MyCandle::MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPo
 	MyMesh candleMesh = createCylinder(height, radius, 20);
 
 	float amb[] = { 1.0f, 1.0f, 0.2f, 1.0f };
-	float diff[] = { 0.6f, 0.1f, 0.3f, 1.0f };
-	float spec[] = { 0.0f, 0.7f, 0.2f, 1.0f };
+	float diff[] = { 0.80f, 0.80f, 0.7f, 1.0f };
+	float spec[] = { 0.90f, 0.90f, 0.8f, 1.0f };
 	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float shininess = 100.0f;
 	int texcount = 0;

@@ -44,7 +44,7 @@ void MySpotlight::computeEyeStuff() {
 
 	position = MyVec3{ positionTranslated[0], positionTranslated[1], positionTranslated[2] };
 
-	float directionToTranslate[4] = { 0, 0, -1, 0 };
+	float directionToTranslate[4] = { 0, -0.2, -1, 0 };
 	float* directionTranslated = (float*)malloc(4 * sizeof(float));
 	pushMatrix(MODEL);
 	multMatrixPoint(MODEL, directionToTranslate, directionTranslated);

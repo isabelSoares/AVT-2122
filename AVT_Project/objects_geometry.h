@@ -71,7 +71,6 @@ class MyRoad {
 public:
 
 	// ============ Road Objects ============
-	MyObject mainRoad;
 	std::vector<MyCheerio> cheerios = {};
 	// ============ Road Object Attributes ============
 	float ROAD_HEIGHT = 0.3;
@@ -109,7 +108,7 @@ public:
 	MyVec3 WHEELS_TRANSLATION_VARIATION[4] = { MyVec3{ 0.55, 0.58, 0.8 }, MyVec3{ 0.55, 0.58, -0.8 }, MyVec3{ 0.55, -0.58, 0.8 }, MyVec3{ 0.55, -0.58, -0.8 } };
 	// =====
 	MyVec3Rotation SPOTLIGHT_ROTATION_VARIATION = MyVec3Rotation{ -5, 1, 0, 0 };
-	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.45, 1, -1}, MyVec3{ -0.45, 1, -1} };
+	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.49, 1.80, -1}, MyVec3{ -0.49, 1.80, -1} };
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;

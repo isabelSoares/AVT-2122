@@ -419,15 +419,16 @@ void renderScene(void) {
 	// ====================================================================================
 
 	// Non Transparent Objects
-	//glDepthMask(GL_TRUE);
 	table.render(shader);
 	road.render(shader);
 	for (MyOrange& orange : oranges) { orange.render(shader); }
 	for (MyCandle& candle : candles) { candle.render(shader); }
 	car.render(shader);
 	// Trasparent Objects
-	//glDepthMask(GL_FALSE);
+	glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
+	glDepthMask(GL_TRUE);
+
 
 	car.tick();
 	road.tick();
@@ -752,7 +753,7 @@ void init()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.098f, 0.098f, 0.439f, 1.0f);
+	glClearColor(0.6f, 0.8f, 1.0f, 1.0f);
 
 	// Blending Stuff
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

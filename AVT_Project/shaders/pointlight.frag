@@ -8,6 +8,8 @@ uniform sampler2D texmap2;
 
 uniform int texMode;
 
+uniform int fogActivated;
+
 // Pointlights
 uniform int lp_states[6];
 
@@ -149,6 +151,8 @@ void main() {
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 
-	float dist = length(DataIn.pos);
-	colorOut = applyFog(vec3(colorOut), dist, colorOut.a);
+	if (fogActivated == 1) {
+		float dist = length(DataIn.pos);
+		colorOut = applyFog(vec3(colorOut), dist, colorOut.a);
+	}
 }

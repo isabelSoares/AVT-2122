@@ -77,8 +77,8 @@ const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
 
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
-MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 5, 0 }, MyVec3{ 0, 0, 0 });
-MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 50.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 130.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
 MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0});
 
 std::vector<MyCamera*> cameras = {
@@ -120,6 +120,9 @@ MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
 // =================================== OTHER OBJECTS ===================================
 
 int gameTime = 0;
+bool fogActivated = false;
+
+MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
 
 // =====================================================================================
 
@@ -144,6 +147,8 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
+
+GLint fogActivated_uniformId;
 
 // PointLight UniformID
 GLint lpPos_uniformId;
@@ -359,7 +364,7 @@ void checkCollisions() {
 		car.collisionStop();
 
 		if (collision == CollisionType::RESTART) { 
-			car.position = MyVec3{ 0, 0, 0 };
+			car.position = START_POSITION;
 			car.direction = MyVec3{ 0, 0, -1 };
 		}
 
@@ -402,6 +407,8 @@ void renderScene(void) {
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 
+	glUniform1i(fogActivated_uniformId, fogActivated);
+
 	dealWithLights();
 
 	// ================================ Check Position Oranges ================================
@@ -443,6 +450,7 @@ void renderScene(void) {
 	carCamera.translation.y = carPosition.y;
 	carCamera.translation.z = carPosition.z;
 	carCamera.lookAtPosition = carPosition;
+	carCamera.rotationDegrees = - (car.getDirectionDegrees() - 270.0f);
 	currentCamera->updateCamera();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -516,7 +524,12 @@ void processKeys(unsigned char key, int xx, int yy)
 			}
 			break;
 
+		// ================= OTHER STUFF =================
 
+		case 'F':
+		case 'f':
+			fogActivated = !fogActivated;
+			break;
 
 		/*case 'c':
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", currentCamera->alpha, currentCamera->beta, currentCamera->r);
@@ -682,6 +695,9 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 
+
+	fogActivated_uniformId = glGetUniformLocation(shader.getProgramIndex(), "fogActivated");
+
 	// Pointlight Get UniformID
 	lpPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "lp_positions");
 	lpState_uniformId = glGetUniformLocation(shader.getProgramIndex(), "lp_states");
@@ -730,12 +746,12 @@ void init()
 	ilInit();
 
 	glGenTextures(3, TextureArray);
-	Texture2D_Loader(TextureArray, "./materials/checker.jpg", 0);
+	Texture2D_Loader(TextureArray, "./materials/roadGrass2.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
 
 	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
-	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, TABLE_SIZE + 0.2, 2.5, 0.4, 0.8);
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
 	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
 	oranges = {};
@@ -744,10 +760,16 @@ void init()
 		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1)));
 	}
-	butters = { MyPacketButter(MyVec3{ 5.0f, 0.6, 5.0f }, MyVec3{3.0f, 1.2f, 1.5f}) };
-	candles = { MyCandle(MyVec3{20, 0, -10}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{-20, 0, -10}, 2, 0.4, &pointlights[1]),
-				MyCandle(MyVec3{20, 0, -20}, 2, 0.4, &pointlights[2]), MyCandle(MyVec3{-20, 0, -20}, 2, 0.4, &pointlights[3]),
-				MyCandle(MyVec3{30, 0, -30}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{-30, 0, -30}, 2, 0.4, &pointlights[5])};
+	butters = { MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE + 5, 0.6, - 0.3 * TABLE_SIZE + 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
+				MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE - 5, 0.6, 0.3 * TABLE_SIZE - 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
+				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}),
+				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, - 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}) };
+	candles = { MyCandle(MyVec3{- 0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[1]),
+				MyCandle(MyVec3{ 0, 0, - 0.48 * TABLE_SIZE}, 2, - 0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
+				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, - 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, - 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5])};
+
+	START_POSITION = MyVec3{ - 0.25 * TABLE_SIZE, 0, 0};
+	car.position = START_POSITION;
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);

@@ -118,7 +118,7 @@ MyCheerio::MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float ou
 	cheerioMesh.mat.texCount = texcountCheerio;
 
 	MyVec3 cheerioPosition = position;
-	MyVec3 cheerioScale = MyVec3{ 1, 3, 1 };
+	MyVec3 cheerioScale = MyVec3{ 1, 2.3, 1 };
 
 	cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
 }
@@ -200,10 +200,10 @@ void MyTable::render(VSShaderLib shader) {
 }
 
 MyRoad::MyRoad() {}
-MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp) {
+MyRoad::MyRoad(MyVec3 positionTemp, float width, float sideDistance, float sizeStraight, float tableWidthTemp, float tableLengthTemp, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp) {
 
 	position = positionTemp;
-	scaling = MyVec3{ width, ROAD_HEIGHT, length };
+	scaling = MyVec3{ tableWidthTemp, ROAD_HEIGHT, tableLengthTemp };
 
 	// Left / Margin
 	for (int i = 0; i < 2; i++) {
@@ -211,30 +211,52 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_di
 		// 1 = Right / -1 = Left
 		int correctedMarginFactor = i * 2 - 1;
 
-		// Backwards / Forwards
-		for (int j = 0; j < 2; j++) {
+		float currentPosition = 0.0f;
+		float perimeter = sizeStraight + sizeStraight + O_PI * (sideDistance + width);
 
-			// 1 = Forwards / -1 = Backwards
-			int correctedPlacingFactor = - (j * 2 - 1);
+		while (currentPosition < perimeter) {
 
-			float currentPosition = 0.0f;
-			while (abs(currentPosition) <= length / 2) {
+			MyVec3 cheerioPositionVariation = MyVec3{ 0, 0, 0 };
 
-				// Backward does not place in 0
-				if (correctedPlacingFactor == -1 && currentPosition == 0) { 
-					// Update next position
-					currentPosition = currentPosition + correctedPlacingFactor * cheerios_distance;
-					continue;
-				}
+			// Left Side 1st Part
+			if (currentPosition >= 0 && currentPosition < sizeStraight / 2) {
+				cheerioPositionVariation = MyVec3{ -sideDistance / 2 + correctedMarginFactor * width / 2, (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, currentPosition };
 
-				MyVec3 cheerioPosition = position + MyVec3{ correctedMarginFactor * (width / 2 - outterCheerioRadiusTemp), (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, currentPosition};
-				MyCheerio cheerio = MyCheerio(cheerioPosition, innerCheerioRadiusTemp, outterCheerioRadiusTemp);
-				cheerios.push_back(cheerio);
+			} else if (currentPosition >= sizeStraight / 2 && currentPosition < sizeStraight / 2 + O_PI * (sideDistance + width) / 2) {
+				float angleRoad = ((currentPosition - sizeStraight / 2.0f) * 360) / (O_PI * (sideDistance + width)) + 2.0;
+				float radius = (sideDistance + correctedMarginFactor * width) / 2;
+				MyVec3 center = MyVec3{ 0, 0, sizeStraight / 2 };
 
-				// Update next position
-				currentPosition = currentPosition + correctedPlacingFactor * cheerios_distance;
+				float angleRoadRadians = angleRoad * (O_PI / 180.0f);
+				cheerioPositionVariation = center + MyVec3{ radius * cosf(angleRoadRadians), (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, radius * sinf(angleRoadRadians) };
+
+			} else if (currentPosition >= sizeStraight / 2 + O_PI * (sideDistance + width) / 2 && currentPosition < sizeStraight / 2 + O_PI * (sideDistance + width) / 2 + sizeStraight) {
+
+				cheerioPositionVariation = MyVec3{ sideDistance / 2 - correctedMarginFactor * width / 2, (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, - currentPosition + sizeStraight / 2 + O_PI * (sideDistance + width) / 2 + sizeStraight / 2};
+
+			} else if (currentPosition >= sizeStraight / 2 + O_PI * (sideDistance + width) / 2 + sizeStraight && currentPosition < sizeStraight / 2 + O_PI * (sideDistance + width) + sizeStraight) {
+
+				float angleRoad = ((currentPosition - (sizeStraight / 2 + O_PI * (sideDistance + width) / 2 + sizeStraight)) * 360) / (O_PI * (sideDistance + width));
+				float radius = (sideDistance + correctedMarginFactor * width) / 2;
+				MyVec3 center = MyVec3{ 0, 0, - sizeStraight / 2 };
+
+				float angleRoadRadians = angleRoad * (O_PI / 180.0f);
+				cheerioPositionVariation = center + MyVec3{ radius * cosf(angleRoadRadians), (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, - radius * sinf(angleRoadRadians) };
+
+			} else {
+				cheerioPositionVariation = MyVec3{ - sideDistance / 2 + correctedMarginFactor * width / 2, (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, currentPosition - (sizeStraight / 2 + O_PI * (sideDistance + width) + sizeStraight) - sizeStraight / 2};
 			}
+
+			MyVec3 cheerioPosition = position + cheerioPositionVariation;
+			MyCheerio cheerio = MyCheerio(cheerioPosition, innerCheerioRadiusTemp, outterCheerioRadiusTemp);
+
+			cheerios.push_back(cheerio);
+
+			// Update next position
+			currentPosition = currentPosition + cheerios_distance;
 		}
+
+
 	}
 }
 
@@ -248,11 +270,11 @@ void MyRoad::tick() {
 
 std::vector<MyCheerio> MyRoad::getCheerios() { return cheerios; }
 
-float MyCar::MAX_VELOCITY = 1.5f;
+float MyCar::MAX_VELOCITY = 0.8f;
 float MyCar::START_ACCELERATION = 0.01f;
 float MyCar::STOP_ACCELERATION = 0.0f;
 float MyCar::FRICTION_COEFICIENT = 0.0055f;
-float MyCar::ANGLE_ROTATION_VELOCITY = 2.0f;
+float MyCar::ANGLE_ROTATION_VELOCITY = 1.0f;
 float MyCar::MAX_WHEEL_ANGLE = 3.0f;
 float MyCar::FRICTION_ROTATION_COEFICIENT = 0.055f;
 
@@ -321,6 +343,14 @@ void MyCar::render(VSShaderLib shader) {
 
 MyVec3 MyCar::getPosition() {
 	return position;
+}
+float MyCar::getDirectionDegrees() {
+	float dot = 1 * direction.x + 0 * direction.z;
+	float det = 1 * direction.z - 0 * direction.x;
+	double angleRadians = atan2(det, dot);
+	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
+
+	return angleDegrees;
 }
 std::vector<MyVec3> MyCar::getBoundRect() {
 

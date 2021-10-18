@@ -17,6 +17,7 @@ public:
 
 	MyVec3 lookAtPosition;
 	MyVec3 translation;
+	float rotationDegrees = 0;
 
 	MyCamera();
 	MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp);

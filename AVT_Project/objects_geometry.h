@@ -81,7 +81,7 @@ public:
 	MyVec3 direction = MyVec3{ 0, 0, -1 };
 
 	MyRoad();
-	MyRoad(MyVec3 positionTemp, float width, float length, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
+	MyRoad(MyVec3 positionTemp, float width, float sideDistance, float sizeStraight, float tableWidthTemp, float tableLengthTemp, float cheerios_distance, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
 
 	std::vector<MyCheerio> getCheerios();
 
@@ -133,6 +133,7 @@ public:
 	void updateObjects();
 
 	MyVec3 getPosition();
+	float getDirectionDegrees();
 	std::vector<MyVec3> getBoundRect();
 
 	void tick();

@@ -34,7 +34,7 @@ void MyCamera::updateCamera() {
 };
 
 void MyCamera::updateCameraWithAux(float alphaAux, float betaAux, float rAux) {
-	position.x = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + translation.x;
-	position.z = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + translation.z;
+	position.x = rAux * sin((alphaAux + rotationDegrees) * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + translation.x;
+	position.z = rAux * cos((alphaAux  + rotationDegrees) * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + translation.z;
 	position.y = rAux * sin(betaAux * 3.14f / 180.0f) + translation.y;
 };

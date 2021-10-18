@@ -106,5 +106,8 @@
     <Image Include="materials\orange.jpg">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="materials\racetrack.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

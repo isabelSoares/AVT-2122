@@ -45,6 +45,9 @@
     <ClCompile Include="pointlight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="avtFreeType.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h">
@@ -78,6 +81,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pointlight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="avtFreeType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ft2build.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -41,6 +41,8 @@ void MyObject::render(VSShaderLib shader) {
 	glUniform4fv(loc, 1, mesh.mat.specular);
 	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 	glUniform1f(loc, mesh.mat.shininess);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+	glUniform1i(loc, mesh.mat.texCount);
 	pushMatrix(MODEL);
 
 	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
@@ -54,11 +56,20 @@ void MyObject::render(VSShaderLib shader) {
 	GLint lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
 	GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 
+	GLint normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
+	GLint specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
+	GLint diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
+
 	if (textureOption == MyTextureOption::Multitexturing) glUniform1i(texMode_uniformId, 3);
 	else if (textureOption == MyTextureOption::Orange) glUniform1i(texMode_uniformId, 4);
 	else glUniform1i(texMode_uniformId, 0);
 
-	// send matrices to OGL
+	// Parameters from OBJs
+	glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+	glUniform1i(specularMap_loc, false);
+	glUniform1ui(diffMapCount_loc, 0);
+
+	// send matrices to OGL5
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
 	glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
 	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
@@ -69,7 +80,13 @@ void MyObject::render(VSShaderLib shader) {
 	glBindVertexArray(mesh.vao);
 
 	if (!shader.isProgramValid()) {
-		printf("Program Not Valid!\n");
+		printf("===================================================================\n");
+		printf("Program Not Valid Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
+		glLinkProgram(shader.getProgramIndex());
+		printf("===============\n");
+		printf("Program Not Valid Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
+		printf("===================================================================\n");
+
 		exit(1);
 	}
 	glDrawElements(mesh.type, mesh.numIndexes, GL_UNSIGNED_INT, 0);

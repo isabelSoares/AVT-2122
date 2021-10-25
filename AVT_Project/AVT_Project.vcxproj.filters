@@ -48,6 +48,9 @@
     <ClCompile Include="avtFreeType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="meshFromAssimp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVTmathLib.h">
@@ -89,6 +92,9 @@
     <ClInclude Include="ft2build.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="meshFromAssimp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\pointlight.frag">
@@ -104,19 +110,11 @@
     <None Include="shaders\pointlightGouraud.vert">
       <Filter>Resource Files</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="materials\lightwood.tga">
+    <None Include="shaders\text.frag">
       <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="materials\checker.jpg">
+    </None>
+    <None Include="shaders\text.vert">
       <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="materials\orange.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="materials\racetrack.png">
-      <Filter>Resource Files</Filter>
-    </Image>
+    </None>
   </ItemGroup>
 </Project>

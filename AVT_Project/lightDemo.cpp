@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <fstream>
 #include <vector>
 
 // include GLEW to access OpenGL 3.3 functions
@@ -27,12 +28,19 @@
 
 #include <IL/il.h>
 
+// assimp include files. These three are usually needed.
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/scene.h"
+
 // Use Very Simple Libs
 #include "VSShaderlib.h"
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
 #include "geometry.h"
 #include "Texture_Loader.h"
+#include "meshFromAssimp.h"
+
+#include "avtFreeType.h"
 
 #include "camera.h"
 
@@ -48,13 +56,22 @@ using namespace std;
 int WindowHandle = 0;
 int WinX = 640, WinY = 480;
 
+// Created an instance of the Importer class in the meshFromAssimp.cpp file
+extern Assimp::Importer importer;
+// the global Assimp scene object
+extern const aiScene* scene;
+char model_dir[50];  //initialized by the user input at the console
+// scale factor for the Assimp model to fit in the window
+extern float scaleFactor;
+
+//Array of meshes 
+vector<struct MyMesh> myMeshes;
+
+
 unsigned int FrameCount = 0;
 
 VSShaderLib shader;
-
-//Vector with meshes
-vector<struct MyMesh> myMeshes;
-vector<struct MyVec3> myPositions;
+VSShaderLib shaderText;  //render bitmap text
 
 // =================================== RENDER OBJECTS ===================================
 
@@ -133,11 +150,15 @@ const int TABLE_SIZE = 250;
 const int NUMBER_ORANGES = 15;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
+
+bool normalMapKey = TRUE;
+
+const string font_name = "fonts/arial.ttf";
 // ======================================================================================
 
 //External array storage defined in AVTmathLib.cpp
 
-/// The storage for matrices
+/// The storage for matrices5
 extern float mMatrix[COUNT_MATRICES][16];
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 
@@ -168,6 +189,11 @@ GLint lsState_uniformId;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLint texMode_uniformId;
 GLuint TextureArray[3];
+
+// Assimp UniformID
+GLint normalMap_loc;
+GLint specularMap_loc;
+GLint diffMapCount_loc;
 
 // Mouse Tracking Variables
 int startX, startY, tracking = 0;
@@ -375,6 +401,115 @@ void checkCollisions() {
 
 // ------------------------------------------------------------
 //
+// Render stuff
+//
+
+// Recursive render of the Assimp Scene Graph
+
+void aiRecursive_render(const aiScene* sc, const aiNode* nd)
+{
+	GLint loc;
+
+	// Get node transformation matrix
+	aiMatrix4x4 m = nd->mTransformation;
+	// OpenGL matrices are column major
+	m.Transpose();
+
+	// save model matrix and apply node transformation
+	pushMatrix(MODEL);
+
+	float aux[16];
+	memcpy(aux, &m, sizeof(float) * 16);
+	multMatrix(MODEL, aux);
+
+
+	// draw all meshes assigned to this node
+	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+
+		
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.emissive);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+
+		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+		
+		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
+
+		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+		glUniform1i(specularMap_loc, false);
+		glUniform1ui(diffMapCount_loc, 0);
+
+		if(myMeshes[nd->mMeshes[n]].mat.texCount != 0)  
+			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
+				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+					if (diffMapCount == 0) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
+						glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else if (diffMapCount == 1) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
+						glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
+					glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+					glUniform1i(specularMap_loc, true);
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
+					if (normalMapKey)
+						glUniform1i(normalMap_loc, normalMapKey);
+					glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+
+				}
+				else printf("Texture Map not supported\n");
+			}
+		
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// bind VAO
+		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
+
+		if (!shader.isProgramValid()) {
+			printf("Program Not Valid!\n");
+			exit(1);
+		}
+		// draw
+		glDrawElements(myMeshes[nd->mMeshes[n]].type, myMeshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+
+	// draw all children
+	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+		aiRecursive_render(sc, nd->mChildren[n]);
+	}
+	popMatrix(MODEL);
+}
+
+// ------------------------------------------------------------
+// ------------------------------------------------------------
+//
 // Render stufff
 //
 
@@ -435,8 +570,7 @@ void renderScene(void) {
 	glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
 	glDepthMask(GL_TRUE);
-
-
+	
 	car.tick();
 	road.tick();
 	for (MyOrange& orange : oranges) { orange.tick(); }
@@ -453,7 +587,37 @@ void renderScene(void) {
 	carCamera.rotationDegrees = - (car.getDirectionDegrees() - 270.0f);
 	currentCamera->updateCamera();
 
+	// Render OBJs
+	translate(MODEL, START_POSITION.x, START_POSITION.y + 2, START_POSITION.z - 10);
+	aiRecursive_render(scene, scene->mRootNode);
+
+
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//Render text (bitmap fonts)
+	glDisable(GL_DEPTH_TEST);
+	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
+	int m_viewport[4];
+	glGetIntegerv(GL_VIEWPORT, m_viewport);
+
+	//viewer looking down at  negative z direction
+	pushMatrix(MODEL);
+	loadIdentity(MODEL);
+	pushMatrix(PROJECTION);
+	loadIdentity(PROJECTION);
+	pushMatrix(VIEW);
+	loadIdentity(VIEW);
+
+	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
+	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+	//RenderText(shaderText, "AVT Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+	
+	popMatrix(PROJECTION);
+	popMatrix(VIEW);
+	popMatrix(MODEL);
+
+	glEnable(GL_DEPTH_TEST);
+
 	glutSwapBuffers();
 }
 
@@ -688,6 +852,8 @@ GLuint setupShaders() {
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
 	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TANGENT_ATTRIB, "tangent");
+	glBindAttribLocation(shader.getProgramIndex(), BITANGENT_ATTRIB, "bitangent");
 
 	glLinkProgram(shader.getProgramIndex());
 
@@ -718,10 +884,23 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 
+	// Assimp Shader UniformID
+	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
+	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
+	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
+	
 	// printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 	printf("InfoLog for Per Fragment Gouraud Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
+
+	// Shader for bitmap Text
+	shaderText.init();
+	shaderText.loadShader(VSShaderLib::VERTEX_SHADER, "shaders/text.vert");
+	shaderText.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/text.frag");
+
+	glLinkProgram(shaderText.getProgramIndex());
+	printf("InfoLog for Text Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
 	
-	return(shader.isProgramLinked());
+	return(shader.isProgramLinked() && shaderText.isProgramLinked());
 }
 
 // ------------------------------------------------------------
@@ -729,7 +908,7 @@ GLuint setupShaders() {
 // Model loading and OpenGL setup
 //
 
-void init()
+int init()
 {
 	for (MyCamera* camera : cameras) {
 		// set the camera position based on its spherical coordinates
@@ -744,6 +923,9 @@ void init()
 	}
 
 	ilInit();
+
+	/// Initialization of freetype library with font_name file
+	freeType_init(font_name);
 
 	glGenTextures(3, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass2.jpg", 0);
@@ -771,6 +953,40 @@ void init()
 	START_POSITION = MyVec3{ - 0.25 * TABLE_SIZE, 0, 0};
 	car.position = START_POSITION;
 
+
+
+	std::string filepath; 
+	
+	while (true) {
+		cout << "Input the directory name containing the OBJ file: ";
+		cin >> model_dir;
+		
+		std::ostringstream oss;
+		oss << model_dir << "/" << model_dir << ".obj";
+		filepath = oss.str();   //path of OBJ file in the VS project
+
+		strcat(model_dir, "/");  //directory path in the VS project
+
+		//check if file exists
+		ifstream fin(filepath.c_str());
+		if (!fin.fail()) {
+			fin.close();
+			break;
+		}
+		else
+			printf("Couldn't open file: %s\n", filepath.c_str());
+	}
+	
+	//import 3D file into Assimp scene graph
+	if (!Import3DFromFile(filepath))
+		return(0);
+
+
+
+
+	//creation of Mymesh array with VAO Geometry and Material
+	myMeshes = createMeshFromAssimp(scene);
+
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -792,7 +1008,7 @@ void init()
 
 int main(int argc, char **argv) {
 
-//  GLUT initialization
+	//  GLUT initialization
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_MULTISAMPLE);
 
@@ -805,7 +1021,7 @@ int main(int argc, char **argv) {
 	WindowHandle = glutCreateWindow(CAPTION);
 
 
-//  Callback Registration
+	//  Callback Registration
 	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
 
@@ -813,7 +1029,7 @@ int main(int argc, char **argv) {
 	// glutIdleFunc(renderScene);  // Use it for maximum performance
 	glutTimerFunc(0, refresh, 0);    //use it to to get 60 FPS whatever
 
-//	Mouse and Keyboard Callbacks
+	//	Mouse and Keyboard Callbacks
 	glutKeyboardFunc(processKeys);
 	glutKeyboardUpFunc(processKeysUp);
 	glutMouseFunc(processMouseButtons);
@@ -822,10 +1038,10 @@ int main(int argc, char **argv) {
 	
 
 
-//	return from main loop
+	//	return from main loop
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
-//	Init GLEW
+	//	Init GLEW
 	glewExperimental = GL_TRUE;
 	glewInit();
 
@@ -837,7 +1053,8 @@ int main(int argc, char **argv) {
 	if (!setupShaders())
 		return(1);
 
-	init();
+	if (!init())
+		printf("Could not Load the Model\n");
 
 	//  GLUT main loop
 	glutMainLoop();

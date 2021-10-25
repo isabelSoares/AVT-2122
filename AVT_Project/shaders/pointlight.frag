@@ -1,10 +1,15 @@
-#version 330
+#version 430
 
 out vec4 colorOut;
 
 uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
+
+uniform	sampler2D texUnitDiff;
+uniform	sampler2D texUnitDiff1;
+uniform	sampler2D texUnitSpec;
+uniform	sampler2D texUnitNormalMap;
 
 uniform int texMode;
 
@@ -31,6 +36,10 @@ struct Materials {
 
 uniform Materials mat;
 
+uniform bool normalMap;  //for normal mapping
+uniform bool specularMap;
+uniform uint diffMapCount;
+
 in Data {
 	vec4 pos;
 
@@ -56,6 +65,8 @@ vec4 applyFog( in vec3 rgb, in float distance, in float alpha) {
 	return vec4(final_color, alpha);
 }
 
+vec4 diff, auxSpec;
+
 void main() {
 
 	// ============================== COMMON CALCULATIONS ==============================
@@ -63,12 +74,29 @@ void main() {
 	vec3 n = normalize(DataIn.normal);
 	vec3 e = normalize(DataIn.eye);
 
+	if(normalMap)
+		n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
+
 	vec4 texel0, texel1, texel2;
 	
 	if (texMode != 0) {
 		texel0 = texture(texmap0, DataIn.tex_coord);  // texel from checker.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from lighwood.tga
 		texel2 = texture(texmap2, DataIn.tex_coord);  // texel from orange.jpg
+	}
+
+	// Auxiliary Variables for OBJs
+	diff = mat.diffuse;
+	auxSpec = mat.specular;
+
+	// Compute Correct Difuse with OBJs
+	if (mat.texCount != 0) {
+		if(diffMapCount == 0) diff = mat.diffuse;
+		else if(diffMapCount == 1) diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		else diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+
+		if(specularMap) auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		else auxSpec = mat.specular;
 	}
 
 	// ============================== =================== ==============================
@@ -91,12 +119,12 @@ void main() {
 
 			vec3 h = normalize(l + e);
 			float intSpec = max(dot(h,n), 0.0);
-			spec = mat.specular * pow(intSpec, mat.shininess);
+			spec = auxSpec * pow(intSpec, mat.shininess);
 		}
 
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
-		else finalLightsColor += intensity * mat.diffuse + spec;
+		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
 
 	// DirectionalLights
@@ -113,12 +141,12 @@ void main() {
 
 			vec3 h = normalize(l + e);
 			float intSpec = max(dot(h,n), 0.0);
-			spec = mat.specular * pow(intSpec, mat.shininess);
+			spec = auxSpec * pow(intSpec, mat.shininess);
 		}
 
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
-		else finalLightsColor += intensity * mat.diffuse + spec;
+		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
 
 	// Pointlights
@@ -135,12 +163,12 @@ void main() {
 
 			vec3 h = normalize(l + e);
 			float intSpec = max(dot(h,n), 0.0);
-			spec = mat.specular * pow(intSpec, mat.shininess);
+			spec = auxSpec * pow(intSpec, mat.shininess);
 		}
 
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
-		else finalLightsColor += intensity * mat.diffuse + spec;
+		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
 
 	colorOut = finalLightsColor;

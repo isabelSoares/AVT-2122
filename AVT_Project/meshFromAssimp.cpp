@@ -142,8 +142,8 @@ bool LoadGLTexturesTUs(const aiScene* scene)  // Create OGL textures objects and
 	int numTextures = textureIdMap.size();
 	printf("numeros de mapas %d\n", numTextures);
 
-	GLuint* textureIds = new GLuint[numTextures];
-	glGenTextures(numTextures, textureIds); /* Texture name generation */
+	GLuint* textureIds = new GLuint[numTextures + 3];
+	glGenTextures(numTextures + 3, textureIds); /* Texture name generation */
 
 	/* get iterator */
 	unordered_map<std::string, GLuint>::iterator itr = textureIdMap.begin();
@@ -153,8 +153,8 @@ bool LoadGLTexturesTUs(const aiScene* scene)  // Create OGL textures objects and
 	for (int i = 0; itr != textureIdMap.end(); ++i, ++itr)
 	{
 		filename = (*itr).first;  // get filename
-		glActiveTexture(GL_TEXTURE0 + i);
-		Texture2D_Loader(textureIds, filename.c_str(), i);  //it already performs glBindTexture(GL_TEXTURE_2D, textureIds[i])
+		glActiveTexture(GL_TEXTURE0 + i + 3);
+		Texture2D_Loader(textureIds, filename.c_str(), i + 3);  //it already performs glBindTexture(GL_TEXTURE_2D, textureIds[i])
 		(*itr).second = i;	  // save texture unit for filename in map
 		//printf("textura = %s  TU = %d\n", filename.c_str(), i);
 	}

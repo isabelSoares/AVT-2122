@@ -84,6 +84,11 @@ void main () {
 			aux.y = dot(DataOut.ls_directions[lightIndex], b);
 			aux.z = dot(DataOut.ls_directions[lightIndex], DataOut.normal);
 			DataOut.ls_directions[lightIndex] = normalize(aux);
+
+			aux.x = dot(DataOut.ls_realDirections[lightIndex], t);
+			aux.y = dot(DataOut.ls_realDirections[lightIndex], b);
+			aux.z = dot(DataOut.ls_realDirections[lightIndex], DataOut.normal);
+			DataOut.ls_realDirections[lightIndex] = normalize(aux);
 		}
 	}
 

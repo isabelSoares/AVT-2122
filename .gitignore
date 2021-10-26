@@ -228,3 +228,6 @@ Dependencies
 x64
 Browse.VC.*
 v16
+
+# Exception Cases
+!AVT_Project/backpack/backpack.obj

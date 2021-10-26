@@ -92,20 +92,17 @@ void main() {
 	// Compute Correct Difuse with OBJs
 	if (mat.texCount != 0) {
 		if(diffMapCount == 0) diff = mat.diffuse;
-		//else if(diffMapCount == 1) diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
-		//else diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+		else if(diffMapCount == 1) diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		else diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
 
-		//if(specularMap) auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
-		//else auxSpec = mat.specular;
-
-		colorOut = 0.7 * diff + auxSpec;
-		return;
+		if(specularMap) auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		else auxSpec = mat.specular;
 	}
 
 	// ============================== =================== ==============================
 
 	vec4 finalLightsColor = vec4(0.0);
-
+	
 	// Spotlights
 	for (int lightIndex = 0 ; lightIndex < DataIn.ls_directions.length() ; lightIndex++ ) {
 
@@ -151,7 +148,7 @@ void main() {
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
-
+	
 	// Pointlights
 	for (int lightIndex = 0 ; lightIndex < DataIn.lp_directions.length() ; lightIndex++ ) {
 
@@ -175,10 +172,10 @@ void main() {
 	}
 
 	colorOut = finalLightsColor;
-
+	
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
 	else if (texMode == 4) colorOut = max(finalLightsColor, 0.37 * texel2 );
-	else colorOut = max(finalLightsColor, mat.ambient);
+	else if (mat.texCount == 0) colorOut = max(finalLightsColor, mat.ambient);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 

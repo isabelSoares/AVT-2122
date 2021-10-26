@@ -422,7 +422,6 @@ void aiRecursive_render(const aiScene* sc, const aiNode* nd)
 	memcpy(aux, &m, sizeof(float) * 16);
 	multMatrix(MODEL, aux);
 
-
 	// draw all meshes assigned to this node
 	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
 
@@ -458,27 +457,27 @@ void aiRecursive_render(const aiScene* sc, const aiNode* nd)
 					if (diffMapCount == 0) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+						glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i] + 3);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+						glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i] + 3);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
-					glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+					glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i] + 3);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
-					glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i]);
+					glUniform1i(loc, myMeshes[nd->mMeshes[n]].texUnits[i] + 3);
 
 				}
 				else printf("Texture Map not supported\n");
@@ -592,7 +591,6 @@ void renderScene(void) {
 	// Render OBJs
 	translate(MODEL, START_POSITION.x, START_POSITION.y + 2, START_POSITION.z - 10);
 	aiRecursive_render(scene, scene->mRootNode);
-
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 

@@ -80,7 +80,7 @@ void main() {
 	vec4 texel0, texel1, texel2;
 	
 	if (texMode != 0) {
-		texel0 = texture(texmap0, DataIn.tex_coord);  // texel from checker.tga
+		texel0 = texture(texmap0, DataIn.tex_coord);  // texel from roadGrass2.jpg
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from lighwood.tga
 		texel2 = texture(texmap2, DataIn.tex_coord);  // texel from orange.jpg
 	}
@@ -92,11 +92,14 @@ void main() {
 	// Compute Correct Difuse with OBJs
 	if (mat.texCount != 0) {
 		if(diffMapCount == 0) diff = mat.diffuse;
-		else if(diffMapCount == 1) diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
-		else diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+		//else if(diffMapCount == 1) diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		//else diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
 
-		if(specularMap) auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
-		else auxSpec = mat.specular;
+		//if(specularMap) auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		//else auxSpec = mat.specular;
+
+		colorOut = 0.7 * diff + auxSpec;
+		return;
 	}
 
 	// ============================== =================== ==============================

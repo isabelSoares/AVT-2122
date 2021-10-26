@@ -29,7 +29,7 @@ MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::
 	rotateVec = rotateTemp;
 }
 
-void MyObject::render(VSShaderLib shader) {
+void MyObject::render(VSShaderLib& shader) {
 
 	GLint loc;
 
@@ -80,13 +80,7 @@ void MyObject::render(VSShaderLib shader) {
 	glBindVertexArray(mesh.vao);
 
 	if (!shader.isProgramValid()) {
-		printf("===================================================================\n");
-		printf("Program Not Valid Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
-		glLinkProgram(shader.getProgramIndex());
-		printf("===============\n");
-		printf("Program Not Valid Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
-		printf("===================================================================\n");
-
+		printf("Program Not Valid!\n");
 		exit(1);
 	}
 	glDrawElements(mesh.type, mesh.numIndexes, GL_UNSIGNED_INT, 0);
@@ -140,7 +134,7 @@ MyCheerio::MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float ou
 	cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
 }
 
-void MyCheerio::render(VSShaderLib shader) {
+void MyCheerio::render(VSShaderLib& shader) {
 	cheerio.render(shader);
 }
 
@@ -212,7 +206,7 @@ MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	tableTop.textureOption = MyTextureOption::Multitexturing;
 }
 
-void MyTable::render(VSShaderLib shader) {
+void MyTable::render(VSShaderLib& shader) {
 	tableTop.render(shader);
 }
 
@@ -277,7 +271,7 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float sideDistance, float sizeS
 	}
 }
 
-void MyRoad::render(VSShaderLib shader) {
+void MyRoad::render(VSShaderLib& shader) {
 	for (MyCheerio cheerio : cheerios) cheerio.render(shader);
 }
 
@@ -351,7 +345,7 @@ MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 	}
 }
 
-void MyCar::render(VSShaderLib shader) {
+void MyCar::render(VSShaderLib& shader) {
 
 	mainBlock.render(shader);
 	for (MyObject wheel : wheels) { wheel.render(shader); }
@@ -549,7 +543,7 @@ MyOrange::MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float ma
 	orange.textureOption = MyTextureOption::Orange;
 }
 
-void MyOrange::render(VSShaderLib shader) {
+void MyOrange::render(VSShaderLib& shader) {
 	orange.render(shader);
 }
 
@@ -617,7 +611,7 @@ MyVec3 MyPacketButter::getPosition() {
 	return position;
 }
 
-void MyPacketButter::render(VSShaderLib shader) {
+void MyPacketButter::render(VSShaderLib& shader) {
 	butter.render(shader);
 }
 
@@ -686,6 +680,6 @@ MyVec3 MyCandle::getPosition() {
 	return position;
 }
 
-void MyCandle::render(VSShaderLib shader) {
+void MyCandle::render(VSShaderLib& shader) {
 	candle.render(shader);
 }

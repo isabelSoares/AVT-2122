@@ -441,6 +441,9 @@ void aiRecursive_render(const aiScene* sc, const aiNode* nd)
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
 		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
 
+		GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
+		glUniform1i(texMode_uniformId, 0);
+
 		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
 		
 		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
@@ -487,7 +490,6 @@ void aiRecursive_render(const aiScene* sc, const aiNode* nd)
 		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
 		computeNormalMatrix3x3();
 		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
 		// bind VAO
 		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
 

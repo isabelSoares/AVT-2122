@@ -19,14 +19,10 @@ public:
 
 	MyTextureOption textureOption = MyTextureOption::None;
 
-
-	// Display
-	VSShaderLib shader;
-
 	MyObject();
 	MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateVec);
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 	MyVec3 calculatePointInWorld(MyVec3 point);
 };
 
@@ -39,7 +35,7 @@ public:
 	MyTable();
 	MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 };
 
 class MyCheerio {
@@ -59,7 +55,7 @@ public:
 	MyCheerio();
 	MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float outterCheerioRadiusTemp);
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 
 	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
@@ -85,7 +81,7 @@ public:
 
 	std::vector<MyCheerio> getCheerios();
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 
 	void tick();
 };
@@ -129,7 +125,7 @@ public:
 	MyCar();
 	MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp);
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 	void updateObjects();
 
 	MyVec3 getPosition();
@@ -160,7 +156,7 @@ public:
 	MyOrange();
 	MyOrange(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp, float maxVelocity);
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
 
@@ -185,7 +181,7 @@ public:
 	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 
 	void tick();
 };
@@ -207,7 +203,7 @@ public:
 	MyCandle();
 	MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPointlight* lightTemp);
 
-	void render(VSShaderLib shader);
+	void render(VSShaderLib& shader);
 	MyVec3 getPosition();
 
 	void tick();

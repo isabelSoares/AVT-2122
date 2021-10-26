@@ -116,7 +116,7 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 {
 	// activate corresponding render state	
 	GLuint programIndex = shaderText.getProgramIndex();
-	//glUseProgram(programIndex);
+	glUseProgram(programIndex);
 
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
 	glUniformMatrix4fv(glGetUniformLocation(programIndex, "m_pvm"), 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);

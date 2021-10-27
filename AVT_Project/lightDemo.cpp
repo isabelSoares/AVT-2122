@@ -49,6 +49,7 @@
 #include "pointlight.h"
 
 #include "objects_geometry.h"
+#include "game.h"
 
 using namespace std;
 
@@ -86,7 +87,7 @@ std::vector<MyCandle> candles;
 
 // =================================== CAMERA OBJECTS ===================================
 
-float ratio;
+float ratio, window_width, window_height;
 
 const int ORTHO_CAMERA_ACTIVE = 0;
 const int TOP_PERSPECTIVE_CAMERA_ACTIVE = 1;
@@ -136,7 +137,8 @@ MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
 
 // =================================== OTHER OBJECTS ===================================
 
-int gameTime = 0;
+MyGame game = MyGame();
+
 bool fogActivated = false;
 
 MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
@@ -202,8 +204,31 @@ int startX, startY, tracking = 0;
 long myTime,timebase = 0,frame = 0;
 char s[32];
 
-void timer(int value)
-{
+void initGameObjects() {
+
+	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
+	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
+	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
+	oranges = {};
+	for (int i = 0; i < NUMBER_ORANGES; i++) {
+		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
+		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
+		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(game.gameTime / 300 + 1)));
+	}
+	butters = { MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE + 5, 0.6, -0.3 * TABLE_SIZE + 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
+				MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE - 5, 0.6, 0.3 * TABLE_SIZE - 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
+				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}),
+				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, -0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}) };
+	candles = { MyCandle(MyVec3{-0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[1]),
+				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 2, -0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
+				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5]) };
+
+	START_POSITION = MyVec3{ -0.25 * TABLE_SIZE, 0, 0 };
+	car.position = START_POSITION;
+}
+
+void timer(int value) {
 	std::ostringstream oss;
 	oss << CAPTION << ": " << FrameCount << " FPS @ (" << WinX << "x" << WinY << ")";
 	std::string s = oss.str();
@@ -213,7 +238,7 @@ void timer(int value)
     glutTimerFunc(1000, timer, 0);
 
 	// Update GameTime
-	gameTime = gameTime + 1;
+	if (game.state == MyGameState::Running) game.gameTime = game.gameTime + 1;
 }
 
 void refresh(int value)
@@ -246,6 +271,8 @@ void changeSize(int w, int h) {
 	glViewport(0, 0, w, h);
 	// set the projection matrix
 	ratio = (1.0f * w) / h;
+	window_width = w;
+	window_height = h;
 	changeCameraSize();
 }
 
@@ -390,8 +417,12 @@ void checkCollisions() {
 		car.collisionStop();
 
 		if (collision == CollisionType::RESTART) { 
+
 			car.position = START_POSITION;
 			car.direction = MyVec3{ 0, 0, -1 };
+
+			// Player loses 1 life
+			game.loseLife();
 		}
 
 		car.velocity = 0; car.acceleration = 0;
@@ -547,7 +578,28 @@ void renderScene(void) {
 
 	dealWithLights();
 
+	if (game.state == MyGameState::Restart) {
+
+		initGameObjects();
+		game.resumeGame();
+	}
+
+	// ================================ Check Position Car ================================
+
+	MyVec3 carPosition = car.getPosition();
+	if (abs(carPosition.x) > TABLE_SIZE / 2 || abs(carPosition.z) > TABLE_SIZE / 2) {
+
+		car.position = START_POSITION;
+		car.direction = MyVec3{ 0, 0, -1 };
+
+		// Player loses 1 life
+		game.loseLife();
+	}
+
+	// ================================ ================== ================================
+
 	// ================================ Check Position Oranges ================================
+
 	for (int i = 0; i < NUMBER_ORANGES; i++) {
 
 		MyVec3 currentPosition = oranges[i].getPosition();
@@ -555,7 +607,7 @@ void renderScene(void) {
 
 			float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
 			float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
-			oranges[i] = MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1));
+			oranges[i] = MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(game.gameTime / 300 + 1));
 		}
 	}
 
@@ -572,15 +624,17 @@ void renderScene(void) {
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
 	glDepthMask(GL_TRUE);
 	
-	car.tick();
-	road.tick();
-	for (MyOrange& orange : oranges) { orange.tick(); }
-	for (MyPacketButter& butter : butters) { butter.tick(); }
+	if (game.state == MyGameState::Running) {
+
+		car.tick();
+		road.tick();
+		for (MyOrange& orange : oranges) { orange.tick(); }
+		for (MyPacketButter& butter : butters) { butter.tick(); }
+	}
 
 	checkCollisions();
 
 	// Update Car Camera
-	MyVec3 carPosition = car.getPosition();
 	carCamera.translation.x = carPosition.x;
 	carCamera.translation.y = carPosition.y;
 	carCamera.translation.z = carPosition.z;
@@ -592,31 +646,8 @@ void renderScene(void) {
 	translate(MODEL, START_POSITION.x, START_POSITION.y + 2, START_POSITION.z - 10);
 	aiRecursive_render(scene, scene->mRootNode);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	//Render text (bitmap fonts)
-	glDisable(GL_DEPTH_TEST);
-	//the glyph contains background colors and non-transparent for the actual character pixels. So we use the blending
-	int m_viewport[4];
-	glGetIntegerv(GL_VIEWPORT, m_viewport);
-
-	//viewer looking down at  negative z direction
-	pushMatrix(MODEL);
-	loadIdentity(MODEL);
-	pushMatrix(PROJECTION);
-	loadIdentity(PROJECTION);
-	pushMatrix(VIEW);
-	loadIdentity(VIEW);
-
-	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	//RenderText(shaderText, "AVT Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
-	
-	popMatrix(PROJECTION);
-	popMatrix(VIEW);
-	popMatrix(MODEL);
-
-	glEnable(GL_DEPTH_TEST);
+	// Render Text
+	game.renderHUD(shaderText, window_width, window_height);
 
 	glutSwapBuffers();
 }
@@ -688,6 +719,19 @@ void processKeys(unsigned char key, int xx, int yy)
 			}
 			break;
 
+		// ================= GAME STUFF =================
+
+		case 'S':
+		case 's':
+			if (game.state == MyGameState::Paused) game.resumeGame();
+			else if (game.state == MyGameState::Running) game.pauseGame();
+			break;
+
+		case 'R':
+		case 'r':
+			game.restartGame();
+			break;
+
 		// ================= OTHER STUFF =================
 
 		case 'F':
@@ -728,7 +772,6 @@ void processKeysUp(unsigned char key, int xx, int yy)
 		// ==============================================
 	}
 }
-
 
 // ------------------------------------------------------------
 //
@@ -928,32 +971,12 @@ int init()
 	freeType_init(font_name);
 
 	glGenTextures(3, TextureArray);
-	Texture2D_Loader(TextureArray, "./materials/roadGrass2.jpg", 0);
+	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
 
-	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{TABLE_SIZE, 0.2, TABLE_SIZE});
-	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
-	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
-	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
-	oranges = {};
-	for (int i = 0; i < NUMBER_ORANGES; i++) {
-		float orangeX = rand() % TABLE_SIZE - TABLE_SIZE / 2;
-		float orangeY = rand() % TABLE_SIZE - TABLE_SIZE / 2;
-		oranges.push_back(MyOrange(MyVec3{ orangeX, 2.0, orangeY }, MyVec3{ 1, 1, 1 }, float(gameTime / 300 + 1)));
-	}
-	butters = { MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE + 5, 0.6, - 0.3 * TABLE_SIZE + 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
-				MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE - 5, 0.6, 0.3 * TABLE_SIZE - 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
-				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}),
-				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, - 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}) };
-	candles = { MyCandle(MyVec3{- 0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[1]),
-				MyCandle(MyVec3{ 0, 0, - 0.48 * TABLE_SIZE}, 2, - 0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
-				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, - 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, - 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5])};
-
-	START_POSITION = MyVec3{ - 0.25 * TABLE_SIZE, 0, 0};
-	car.position = START_POSITION;
-
-
+	// Initialize Objects
+	initGameObjects();
 
 	std::string filepath; 
 	
@@ -999,12 +1022,10 @@ int init()
 
 }
 
-
 // ------------------------------------------------------------
 //
 // Main function
 //
-
 
 int main(int argc, char **argv) {
 

@@ -10,6 +10,9 @@
 
 #include "VSShaderlib.h"
 #include "AVTmathLib.h"
+#include "Texture_Loader.h"
+
+#include "avtFreeType.h"
 
 using namespace std;
 
@@ -26,8 +29,20 @@ struct Character {
 std::map<GLchar, Character> Characters;
 unsigned int VAO, VBO;
 
-void freeType_init(const string font_name)
-{
+// =================================== OUR STUFF WITH SYMBOLS ===================================
+
+struct Symbol {
+	unsigned int	TextureID;
+	int				Size[2];
+	int				Bearing[2];
+	unsigned int	Advance;
+};
+
+std::map<std::string, Symbol> Symbols;
+
+// =================================== ====================== ===================================
+
+void freeType_init(const string font_name, std::vector<SymbolInformation> symbols_informations) {
 
 	// FreeType initialization
 	   // --------
@@ -90,6 +105,38 @@ void freeType_init(const string font_name)
 			};
 			Characters.insert(std::pair<char, Character>(c, character));
 		}
+
+		// ============================================================ OUR STUFF FOR SYMBOLS ============================================================
+
+		GLuint* textureIds = new GLuint[symbols_informations.size()];
+		glGenTextures(symbols_informations.size(), textureIds);
+		for (std::size_t i = 0; i < symbols_informations.size(); ++i) {
+			
+			SymbolInformation symbol_info = symbols_informations[i];
+
+			glBindTexture(GL_TEXTURE_2D, textureIds[i]);
+			Texture2D_Loader(textureIds, symbol_info.path, i);
+			// set texture options
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			// now store character for later use
+
+			Symbol symbol = {
+				textureIds[i], { 60, 60 }, 0, 45,
+				4500
+			};
+			Symbols.insert(std::pair<std::string, Symbol>(std::string(symbol_info.code), symbol));
+		}
+
+		for (auto it = Symbols.begin(); it != Symbols.end(); it++) {
+			
+			printf("Symbol code: %s\t\t ID:%d\n", it->first.c_str(), it->second.TextureID);
+		}
+
+		// ============================================================ ===================== ============================================================
+
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	// destroy FreeType once we're finished
@@ -126,17 +173,71 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 	glActiveTexture(GL_TEXTURE0); //no frag shader o uniform sampler foi carregado com TU0
 	glBindVertexArray(VAO);
 
+	// ============================================== FIND SYMBOLS ==============================================
+
+	// You have: $alive$ $alive$ $alive$ $alive$ $dead$
+	// You have: # # # # #
+
+	std::vector<Symbol> symbols_to_present = {};
+	while (text.find("$") != std::string::npos) {
+
+		// Find indexes
+		std::size_t found_beg = text.find("$");
+		std::size_t found_end = text.find("$", found_beg + 1);
+
+		// Find code
+		std::string code = std::string(&text[found_beg + 1], &text[found_end]);
+		text.replace(found_beg, found_end - found_beg + 1, "#");
+		// printf("Found code (%d / %d) '%s' => '%s'\n", found_beg, found_end, code.c_str(), text.c_str());
+
+		Symbol symbol = Symbols[code];
+		//printf("%d\n", symbol.TextureID);
+		symbols_to_present.push_back(symbol);
+	}
+
+	std::reverse(symbols_to_present.begin(), symbols_to_present.end());
+
 	// iterate through all characters
 	std::string::const_iterator c;
-	for (c = text.begin(); c != text.end(); c++)
-	{
-		Character ch = Characters[*c];
+	for (c = text.begin(); c != text.end(); c++) {
 
-		float xpos = x + ch.Bearing[0] * scale;
-		float ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
+		float xpos, ypos;
+		float w, h;
+		unsigned int textureId;
+		unsigned int advance;
 
-		float w = ch.Size[0] * scale;
-		float h = ch.Size[1] * scale;
+		if (*c == '#') {
+
+			Symbol symbol = symbols_to_present.back();
+			symbols_to_present.pop_back();
+
+			xpos = x + symbol.Bearing[0] * scale;
+			ypos = y - (symbol.Size[1] - symbol.Bearing[1]) * scale;
+
+			w = symbol.Size[0] * scale;
+			h = symbol.Size[1] * scale;
+
+			textureId = symbol.TextureID;
+			advance = symbol.Advance;
+
+			glUniform1i(glGetUniformLocation(programIndex, "symbol"), true);
+
+		} else {
+
+			Character ch = Characters[*c];
+
+			xpos = x + ch.Bearing[0] * scale;
+			ypos = y - (ch.Size[1] - ch.Bearing[1]) * scale;
+
+			w = ch.Size[0] * scale;
+			h = ch.Size[1] * scale;
+
+			textureId = ch.TextureID;
+			advance = ch.Advance;
+
+			glUniform1i(glGetUniformLocation(programIndex, "symbol"), false);
+		}
+
 		// update VBO for each character
 		float vertices[6][4] = {
 			{ xpos,     ypos + h,   0.0f, 0.0f },
@@ -148,7 +249,7 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 			{ xpos + w, ypos + h,   1.0f, 0.0f }
 		};
 		// render glyph texture over quad
-		glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+		glBindTexture(GL_TEXTURE_2D, textureId);
 		// update content of VBO memory
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
@@ -157,7 +258,7 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 		// render quad
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		// now advance cursors for next glyph (note that advance is number of 1/64 pixels)
-		x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
+		x += (advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 	}
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);

@@ -1,6 +1,8 @@
 #pragma once
 
 const int START_LIFES = 5;
+const int WINDOW_SIZE_FOR_TEXT = 1952640;
+const float MIN_TEXT_SCALE = 0.366720;
 
 enum class MyGameState { Running, Paused, Lost, Restart };
 

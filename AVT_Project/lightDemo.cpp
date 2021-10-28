@@ -968,7 +968,10 @@ int init()
 	ilInit();
 
 	/// Initialization of freetype library with font_name file
-	freeType_init(font_name);
+	freeType_init(font_name, {
+		SymbolInformation{"alive", "./materials/alive.png"},
+		SymbolInformation{"dead", "./materials/dead.png"}
+	});
 
 	glGenTextures(3, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
@@ -1003,9 +1006,6 @@ int init()
 	//import 3D file into Assimp scene graph
 	if (!Import3DFromFile(filepath))
 		return(0);
-
-
-
 
 	//creation of Mymesh array with VAO Geometry and Material
 	myMeshes = createMeshFromAssimp(scene);

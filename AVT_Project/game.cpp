@@ -52,11 +52,15 @@ void MyGame::renderHUD(VSShaderLib& shaderText, float window_width, float window
 	pushMatrix(VIEW);
 	loadIdentity(VIEW);
 
+	int window_size = window_width * window_height;
+	float text_scale = 0.7f * (float(window_size) / float(WINDOW_SIZE_FOR_TEXT));
+	if (text_scale < MIN_TEXT_SCALE) text_scale = MIN_TEXT_SCALE;
+
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
 	std::string lifes_line = "You have '" + std::to_string(lifes) + "' lifes left!";
-	RenderText(shaderText, lifes_line, 0.02 * window_width, 0.95 * window_height, 0.7f, 0.2f, 0.2f, 0.2f);
+	RenderText(shaderText, "$alive$ $alive$ $alive$ $alive$ $dead$", 0.02 * window_width, 0.95 * window_height, text_scale, 0.2f, 0.2f, 0.2f);
 	std::string score_line = "You have '" + std::to_string(gameScore) + "' points!";
-	RenderText(shaderText, score_line, 0.02 * window_width, 0.91 * window_height, 0.7f, 0.2, 0.2f, 0.2f);
+	RenderText(shaderText, score_line, 0.02 * window_width, 0.95 * window_height - 65.0f * text_scale, text_scale, 0.2, 0.2f, 0.2f);
 
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);

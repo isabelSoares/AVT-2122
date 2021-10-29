@@ -642,6 +642,8 @@ void renderScene(void) {
 	carCamera.rotationDegrees = - (car.getDirectionDegrees() - 270.0f);
 	currentCamera->updateCamera();
 
+	game.update(car.getPosition());
+
 	// Render OBJs
 	translate(MODEL, START_POSITION.x, START_POSITION.y + 2, START_POSITION.z - 10);
 	aiRecursive_render(scene, scene->mRootNode);
@@ -970,7 +972,8 @@ int init()
 	/// Initialization of freetype library with font_name file
 	freeType_init(font_name, {
 		SymbolInformation{"alive", "./materials/alive.png"},
-		SymbolInformation{"dead", "./materials/dead.png"}
+		SymbolInformation{"dead", "./materials/dead.png"},
+		SymbolInformation{"coin", "./materials/coin.png"}
 	});
 
 	glGenTextures(3, TextureArray);

@@ -3,6 +3,10 @@
 
 #define O_PI       3.14159265358979323846f
 
+// assimp include files. These three are usually needed.
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/scene.h"
+
 #include "spotlight.h"
 #include "pointlight.h"
 
@@ -24,6 +28,20 @@ public:
 
 	void render(VSShaderLib& shader);
 	MyVec3 calculatePointInWorld(MyVec3 point);
+};
+
+class MyAssimpObject {
+public:
+	std::vector<MyMesh> meshes;
+	MyVec3 positionVec;
+	MyVec3 scaleVec;
+	std::vector<MyVec3Rotation> rotateVec;
+	std::vector<MyVec3> translationBeforeRotation = {};
+
+	MyAssimpObject();
+	MyAssimpObject(std::string modelDir, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateVec);
+
+	void render(VSShaderLib& shader, const aiScene* sc, const aiNode* nd);
 };
 
 class MyTable {		
@@ -93,6 +111,8 @@ public:
 	MyObject mainBlock;
 	std::vector<MyObject> wheels;
 
+	MyAssimpObject carObj;
+
 	std::vector<MySpotlight*> spotlights;
 	// ============ Car Object Attributes ============
 	MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 1, 1, 1.5 };
@@ -105,6 +125,10 @@ public:
 	// =====
 	MyVec3Rotation SPOTLIGHT_ROTATION_VARIATION = MyVec3Rotation{ -5, 1, 0, 0 };
 	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.49, 1.80, -1}, MyVec3{ -0.49, 1.80, -1} };
+	// =====
+	MyVec3 OBJ_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
+	MyVec3Rotation OBJ_ROTATION_VARIATION = MyVec3Rotation{-90, 0, 1, 0};
+	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{ 0, 0, 0};
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;

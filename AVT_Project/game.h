@@ -32,4 +32,7 @@ public:
 
 	// Update Scene
 	void renderHUD(VSShaderLib& shaderText, float window_width, float window_height);
+
+private:
+	void renderSquareScreen(VSShaderLib& shaderText, float window_width, float window_height);
 };

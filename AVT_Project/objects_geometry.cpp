@@ -3,23 +3,39 @@
 #include <stdlib.h>
 #include <vector>
 
+#include <iostream>
+#include <sstream>
+#include <fstream>
+
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
 
 // GLUT is the toolkit to interface with the OS
 #include <GL/freeglut.h>
+
+// assimp include files. These three are usually needed.
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/scene.h"
+
 #include "AVTmathLib.h"
 #include "VertexAttrDef.h"
 #include "geometry.h"
 
 #include "VSShaderlib.h"
+#include "meshFromAssimp.h"
 
 #include "spotlight.h"
 #include "pointlight.h"
 #include "objects_geometry.h"
 
+using namespace std;
+
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 extern float mNormal3x3[9];
+
+extern Assimp::Importer importer;
+extern const aiScene* scene;
+char model_dir[50];
 
 MyObject::MyObject() {}
 MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateTemp) {
@@ -103,6 +119,155 @@ MyVec3 MyObject::calculatePointInWorld(MyVec3 point) {
 	popMatrix(MODEL);
 
 	return MyVec3{ positionTranslated[0], positionTranslated[1], positionTranslated[2] };
+}
+
+MyAssimpObject::MyAssimpObject() {}
+MyAssimpObject::MyAssimpObject(std::string modelDir, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateTemp) {
+
+	std::string filepath; 
+	std::ostringstream oss;
+
+	std::strncpy(model_dir, modelDir.c_str(), sizeof(modelDir));
+
+	oss << model_dir << "/" << model_dir << ".obj";
+	filepath = oss.str();   //path of OBJ file in the VS project
+
+	strcat(model_dir, "/");  //directory path in the VS project
+
+	//check if file exists
+	ifstream fin(filepath.c_str());
+	if (!fin.fail()) {
+		fin.close();
+	} else {
+		printf("Couldn't open file: %s\n", filepath.c_str());
+		exit(1);
+	}
+	
+	//import 3D file into Assimp scene graph
+	if (!Import3DFromFile(filepath)) exit(1);
+
+	//creation of Mymesh array with VAO Geometry and Material
+	meshes = createMeshFromAssimp(scene);
+
+	positionVec = positionTemp;
+	scaleVec = scaleTemp;
+	rotateVec = rotateTemp;
+}
+
+void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode* nd) {
+
+	bool normalMapKey = TRUE;
+
+	GLint loc;
+
+	// Get node transformation matrix
+	aiMatrix4x4 m = nd->mTransformation;
+	// OpenGL matrices are column major
+	m.Transpose();
+
+	// save model matrix and apply node transformation
+	pushMatrix(MODEL);
+	loadIdentity(MODEL);
+
+	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
+	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z);  }
+	scale(MODEL, scaleVec.x, scaleVec.y, scaleVec.z);
+	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
+
+	float aux[16];
+	memcpy(aux, &m, sizeof(float) * 16);
+	multMatrix(MODEL, aux);
+
+	// draw all meshes assigned to this node
+	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+		
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, meshes[nd->mMeshes[n]].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, meshes[nd->mMeshes[n]].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, meshes[nd->mMeshes[n]].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, meshes[nd->mMeshes[n]].mat.emissive);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, meshes[nd->mMeshes[n]].mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, meshes[nd->mMeshes[n]].mat.texCount);
+
+		GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
+		glUniform1i(texMode_uniformId, 0);
+
+		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+		
+		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
+
+		GLint normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
+		GLint specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
+		GLint diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
+		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+		glUniform1i(specularMap_loc, false);
+		glUniform1ui(diffMapCount_loc, 0);
+
+		if(meshes[nd->mMeshes[n]].mat.texCount != 0)  
+			for (unsigned int i = 0; i < meshes[nd->mMeshes[n]].mat.texCount; ++i) {
+				if (meshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+					if (diffMapCount == 0) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else if (diffMapCount == 1) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
+				}
+				else if (meshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+					glUniform1i(specularMap_loc, true);
+				}
+				else if (meshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
+					if (normalMapKey)
+						glUniform1i(normalMap_loc, normalMapKey);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+
+				}
+				else printf("Texture Map not supported\n");
+			}
+		
+		// send matrices to OGL
+		GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
+		GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
+		GLint normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
+
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+		// bind VAO
+		glBindVertexArray(meshes[nd->mMeshes[n]].vao);
+
+		if (!shader.isProgramValid()) {
+			printf("Program Not Valid!\n");
+			exit(1);
+		}
+		// draw
+		glDrawElements(meshes[nd->mMeshes[n]].type, meshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+
+	// draw all children
+	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+		render(shader, sc, nd->mChildren[n]);
+	}
+	popMatrix(MODEL);
 }
 
 MyCheerio::MyCheerio() {}
@@ -343,13 +508,18 @@ MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 		spotlights[i]->direction = direction;
 		spotlights[i]->position = position + SPOTLIGHTS_TRANSLATION_VARIATION[i];
 	}
+
+	// Deal with OBJs
+	carObj = MyAssimpObject("backpack", position + OBJ_TRANSLATION_VARIATION, scaling * OBJ_SCALING_VARIATION, {OBJ_ROTATION_VARIATION});
 }
 
 void MyCar::render(VSShaderLib& shader) {
 
 	mainBlock.render(shader);
 	for (MyObject wheel : wheels) { wheel.render(shader); }
-	
+		
+	// Render OBJ
+	carObj.render(shader, scene, scene->mRootNode);
 }
 
 MyVec3 MyCar::getPosition() {
@@ -460,6 +630,10 @@ void MyCar::updateObjects() {
 	float det = 1 * direction.z - 0 * direction.x;
 	double angleRadians = atan2(det, dot);
 	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
+
+	carObj.scaleVec = scaling * OBJ_SCALING_VARIATION;
+	carObj.rotateVec = { MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0} };
+	carObj.positionVec = position + OBJ_TRANSLATION_VARIATION;
 
 	mainBlock.scaleVec = scaling * MAIN_BLOCK_SCALING_VARIATION;
 	mainBlock.rotateVec = { MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0} };

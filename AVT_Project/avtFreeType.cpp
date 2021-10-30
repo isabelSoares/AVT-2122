@@ -159,7 +159,7 @@ void freeType_init(const string font_name, std::vector<SymbolInformation> symbol
 
 // render line of text
 // -------------------
-void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, float scale, float cR, float cG, float cB)
+void RenderText(VSShaderLib& shaderText, std::string text, bool center, float x, float y, float scale, float cR, float cG, float cB)
 {
 	// activate corresponding render state	
 	GLuint programIndex = shaderText.getProgramIndex();
@@ -169,6 +169,7 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 	glUniformMatrix4fv(glGetUniformLocation(programIndex, "m_pvm"), 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
 
 	glUniform3f(glGetUniformLocation(programIndex, "textColor"), cR, cG, cB);
+	glUniform1i(glGetUniformLocation(programIndex, "geometry"), false);
 
 	glActiveTexture(GL_TEXTURE0); //no frag shader o uniform sampler foi carregado com TU0
 	glBindVertexArray(VAO);
@@ -196,6 +197,35 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 	}
 
 	std::reverse(symbols_to_present.begin(), symbols_to_present.end());
+
+	// ================================== LOGIC FOR CENTERING ==================================
+	float lengthX = 0.0f;
+	float lengthY = 0.0f;
+
+	if (center) {
+
+		// iterate through all characters
+		std::string::const_iterator c;
+		int symbolIndex = symbols_to_present.size() - 1;
+		for (c = text.begin(); c != text.end(); c++) {
+
+			if (*c == '#') {
+
+				Symbol symbol = symbols_to_present[symbolIndex];
+				symbolIndex = symbolIndex - 1;
+
+				lengthX = lengthX + (symbol.Advance >> 6) * scale;
+				if (symbol.Size[1] * scale > lengthY) lengthY = symbol.Size[1] * scale;
+
+			} else {
+
+				Character ch = Characters[*c];
+				lengthX = lengthX + (ch.Advance >> 6) * scale;
+				if (ch.Size[1] * scale > lengthY) lengthY = ch.Size[1] * scale;
+			}
+		}
+	}
+	// ================================== =================== ==================================
 
 	// iterate through all characters
 	std::string::const_iterator c;
@@ -240,13 +270,13 @@ void RenderText(VSShaderLib& shaderText, std::string text, float x, float y, flo
 
 		// update VBO for each character
 		float vertices[6][4] = {
-			{ xpos,     ypos + h,   0.0f, 0.0f },
-			{ xpos,     ypos,       0.0f, 1.0f },
-			{ xpos + w, ypos,       1.0f, 1.0f },
+			{ xpos     - lengthX / 2,     ypos + h - lengthY / 2,       0.0f, 0.0f },
+			{ xpos     - lengthX / 2,     ypos     - lengthY / 2,       0.0f, 1.0f },
+			{ xpos + w - lengthX / 2,	  ypos     - lengthY / 2,       1.0f, 1.0f },
 
-			{ xpos,     ypos + h,   0.0f, 0.0f },
-			{ xpos + w, ypos,       1.0f, 1.0f },
-			{ xpos + w, ypos + h,   1.0f, 0.0f }
+			{ xpos     - lengthX / 2,     ypos + h - lengthY / 2,       0.0f, 0.0f },
+			{ xpos + w - lengthX / 2,	  ypos     - lengthY / 2,       1.0f, 1.0f },
+			{ xpos + w - lengthX / 2,     ypos + h - lengthY / 2,       1.0f, 0.0f }
 		};
 		// render glyph texture over quad
 		glBindTexture(GL_TEXTURE_2D, textureId);

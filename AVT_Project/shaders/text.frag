@@ -5,13 +5,18 @@ out vec4 color;
 
 layout(binding = 0) uniform sampler2D text;
 uniform vec3 textColor;
+uniform vec4 geometryColor;
 
+uniform bool geometry;
 uniform bool symbol;
 
-void main()
-{    
+void main() {
 
-    if (symbol) {
+    if (geometry) {
+    
+        color = geometryColor;
+
+    } else if (symbol) {
         
         color = texture(text, TexCoords);
 

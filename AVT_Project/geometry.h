@@ -1,3 +1,5 @@
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
 
 #define MAX_TEXTURES 8
 
@@ -69,3 +71,5 @@ MyMesh computeVAO(int numP, float *p, float *pfloatoints, int sides, float smoot
 int revSmoothNormal2(float *p, float *nx, float *ny, float smoothCos, int beginEnd);
 float *circularProfile(float minAngle, float maxAngle, float radius, int divisions, float transX= 0.0f, float transY = 0.0f);
 void ComputeTangentArray(int vertexCount, float *vertex, float *normal, float *texcoord, GLuint indexesCount, GLuint *faceIndex, float *tangent);
+
+#endif

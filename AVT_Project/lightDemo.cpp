@@ -66,6 +66,7 @@ MyCar car;
 std::vector<MyOrange> oranges;
 std::vector<MyPacketButter> butters;
 std::vector<MyCandle> candles;
+std::vector<MyBillboardTree> trees;
 
 // ======================================================================================
 
@@ -138,6 +139,10 @@ const int FPS = 60;
 
 const int TABLE_SIZE = 250;
 const int NUMBER_ORANGES = 15;
+const int CHECKER_LENGTH = 8;
+
+const int TREES_PER_MINIMUM = 1;
+const int TREES_PER_MAXIMUM = 6;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
 
@@ -174,9 +179,9 @@ GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 
 // Textures UniformID
-GLint tex_loc0, tex_loc1, tex_loc2;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
 GLint texMode_uniformId;
-GLuint TextureArray[3];
+GLuint TextureArray[4];
 GLuint FlareTextureArray[5];
 
 // Assimp UniformID
@@ -210,6 +215,30 @@ void initGameObjects() {
 	candles = { MyCandle(MyVec3{-0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[1]),
 				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 2, -0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
 				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5]) };
+	
+	trees = { MyBillboardTree(MyVec3{ -0.25 * TABLE_SIZE, 0, -10}, 6) };
+	float square_size = TABLE_SIZE / CHECKER_LENGTH;
+	for (int i = 1; i < CHECKER_LENGTH * CHECKER_LENGTH; i++) {
+
+		if ((i / CHECKER_LENGTH) % 2 == (i % CHECKER_LENGTH) % 2) continue;
+
+		// Starting at top left of table
+		float startPosX = square_size * (i % CHECKER_LENGTH);
+		float startPosY = square_size * (i / CHECKER_LENGTH);
+
+		int numberTrees = rand() % (TREES_PER_MAXIMUM - TREES_PER_MINIMUM + 1) + TREES_PER_MINIMUM;
+
+		for (int j = 0; j < numberTrees; j++) {
+
+			float randomFloatX = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			float posX = randomFloatX * square_size + startPosX;
+			float randomFloatY = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			float posY = randomFloatY * square_size + startPosY;
+
+			trees.push_back({ MyBillboardTree(MyVec3{ -0.5f * TABLE_SIZE + posX, 0, -0.5f * TABLE_SIZE + posY}, 6) });
+		}
+		
+	};
 
 	START_POSITION = MyVec3{ -0.25 * TABLE_SIZE, 0, 0 };
 	car.position = START_POSITION;
@@ -448,9 +477,13 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
+	glUniform1i(tex_loc3, 3);
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
 
@@ -501,6 +534,10 @@ void renderScene(void) {
 	glEnable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
+	for (MyBillboardTree& tree : trees) {
+		tree.update(currentCamera->position);
+		tree.render(shader);
+	}
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 
@@ -824,6 +861,7 @@ GLuint setupShaders() {
 	tex_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmap0");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 
 	// Assimp Shader UniformID
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
@@ -871,10 +909,11 @@ int init() {
 		SymbolInformation{"coin", "./materials/coin.png"}
 	});
 
-	glGenTextures(3, TextureArray);
+	glGenTextures(4, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
+	Texture2D_Loader(TextureArray, "./materials/tree.tga", 3);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);

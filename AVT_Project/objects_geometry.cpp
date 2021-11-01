@@ -23,6 +23,7 @@
 
 #include "VSShaderlib.h"
 #include "meshFromAssimp.h"
+#include "l3dBillboard.h"
 
 #include "spotlight.h"
 #include "pointlight.h"
@@ -78,6 +79,7 @@ void MyObject::render(VSShaderLib& shader) {
 
 	if (textureOption == MyTextureOption::Multitexturing) glUniform1i(texMode_uniformId, 3);
 	else if (textureOption == MyTextureOption::Orange) glUniform1i(texMode_uniformId, 4);
+	else if (textureOption == MyTextureOption::Tree) glUniform1i(texMode_uniformId, 6);
 	else glUniform1i(texMode_uniformId, 0);
 
 	// Parameters from OBJs
@@ -215,13 +217,13 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 					if (diffMapCount == 0) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 4);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 4);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
@@ -856,4 +858,45 @@ MyVec3 MyCandle::getPosition() {
 
 void MyCandle::render(VSShaderLib& shader) {
 	candle.render(shader);
+}
+
+MyBillboardTree::MyBillboardTree() {}
+MyBillboardTree::MyBillboardTree(MyVec3 positionTemp, float sizeTemp) {
+
+	position = positionTemp;
+	size = sizeTemp;
+
+	
+	MyMesh billboardTreeMesh = createQuad(size, size);
+
+	float amb[] = { 1.0f, 0.0f, 0.2f, 1.0f };
+	float diff[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float tree_spec[] = { 0.05f, 0.2f, 0.2f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float tree_shininess = 10.0f;
+	int texcount = 0;
+
+	memcpy(billboardTreeMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(billboardTreeMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(billboardTreeMesh.mat.specular, tree_spec, 4 * sizeof(float));
+	memcpy(billboardTreeMesh.mat.emissive, emissive, 4 * sizeof(float));
+	billboardTreeMesh.mat.shininess = tree_shininess;
+	billboardTreeMesh.mat.texCount = texcount;
+
+	billboardTree = MyObject(billboardTreeMesh, position + MyVec3{ 0, size / 2, 0 }, scaling, {});
+	billboardTree.textureOption = MyTextureOption::Tree;
+
+}
+
+void MyBillboardTree::render(VSShaderLib& shader) {
+	billboardTree.render(shader);
+}
+
+void MyBillboardTree::update(MyVec3 camPosition) {
+
+	float camPositionTransformed[3] = { camPosition.x, camPosition.y, camPosition.z };
+	float positionTransformed[3] = { position.x, position.y, position.z };
+	MyVec3Rotation rotateBillboard = l3dBillboardCylindricalBegin(camPositionTransformed, positionTransformed);
+
+	billboardTree.rotateVec = { rotateBillboard };
 }

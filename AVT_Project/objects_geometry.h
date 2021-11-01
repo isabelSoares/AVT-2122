@@ -10,7 +10,7 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing, Orange };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree };
 
 class MyObject {
 
@@ -231,5 +231,23 @@ public:
 	MyVec3 getPosition();
 
 	void tick();
+};
+
+class MyBillboardTree {
+public:
+	// ============ Billboard Tree Objects ===============
+	MyObject billboardTree;
+	// ============ Billboard Tree Attributes ============
+	MyVec3 position;
+	MyVec3 scaling = MyVec3{ 1, 1, 1};
+
+	float size;
+
+
+	MyBillboardTree();
+	MyBillboardTree(MyVec3 positionTemp, float sizeTemp);
+
+	void render(VSShaderLib& shader);
+	void update(MyVec3 camPosition);
 };
 #endif

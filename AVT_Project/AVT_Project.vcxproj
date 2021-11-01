@@ -164,6 +164,7 @@
     <ClCompile Include="directionalLight.cpp" />
     <ClCompile Include="flare.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="l3dBillboard.cpp" />
     <ClCompile Include="lightDemo.cpp" />
     <ClCompile Include="meshFromAssimp.cpp" />
     <ClCompile Include="objects_geometry.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="directionalLight.h" />
+    <ClInclude Include="l3DBillboard.h" />
     <ClInclude Include="meshFromAssimp.h" />
     <ClInclude Include="objects_geometry.h" />
     <ClInclude Include="pointlight.h" />

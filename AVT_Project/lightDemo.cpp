@@ -42,6 +42,7 @@
 #include "spotlight.h"
 #include "directionalLight.h"
 #include "pointlight.h"
+#include "flare.h"
 
 #include "objects_geometry.h"
 #include "game.h"
@@ -123,8 +124,12 @@ MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
 MyGame game = MyGame();
 
 bool fogActivated = false;
+bool flareEffect = false;
 
 MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
+
+const int FLARE_POINTLIGHT = 3;
+std::vector<char*> flareTextureNames =  {"crcl", "flar", "hxgn", "ring", "sun"};
 
 // =====================================================================================
 
@@ -172,6 +177,7 @@ GLint lsState_uniformId;
 GLint tex_loc0, tex_loc1, tex_loc2;
 GLint texMode_uniformId;
 GLuint TextureArray[3];
+GLuint FlareTextureArray[5];
 
 // Assimp UniformID
 GLint normalMap_loc;
@@ -492,10 +498,18 @@ void renderScene(void) {
 	for (MyCandle& candle : candles) { candle.render(shader); }
 	car.render(shader);
 	// Trasparent Objects
+	glEnable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
 	glDepthMask(GL_TRUE);
-	
+	glDisable(GL_BLEND);
+
+	if (flareEffect) {
+		pointlights[3].computeEyeStuff();
+		MyVec3 lightPos = pointlights[3].getPosition();
+		renderWholeFlare(shader, lightPos);
+	}
+
 	if (game.state == MyGameState::Running) {
 
 		car.tick();
@@ -517,7 +531,9 @@ void renderScene(void) {
 	game.update(car.getPosition());
 
 	// Render Text
+	glEnable(GL_BLEND);
 	game.renderHUD(shaderText, window_width, window_height);
+	glDisable(GL_BLEND);
 
 	glutSwapBuffers();
 }
@@ -527,9 +543,12 @@ void renderScene(void) {
 // Events from the Keyboard
 //
 
-void processKeys(unsigned char key, int xx, int yy)
-{
+void processKeys(unsigned char key, int xx, int yy) {
+
+	// ========================== Allocate Variables for Cases ==========================
 	MyCamera *currentCamera = cameras[activeCamera];
+	// ========================== ============================ ==========================
+
 	switch(key) {
 
 		case 27:
@@ -579,7 +598,10 @@ void processKeys(unsigned char key, int xx, int yy)
 			for (int lightIndex = 0; lightIndex < NUMBER_POINTLIGHTS; lightIndex++) {
 				if (pointlights[lightIndex].state == MyPointlightState::On) pointlights[lightIndex].turnOff();
 				else pointlights[lightIndex].turnOn();
+
+				if (lightIndex == FLARE_POINTLIGHT && pointlights[lightIndex].state == MyPointlightState::Off) flareEffect = false;
 			}
+
 			break;
 		case 'H':
 		case 'h':
@@ -587,6 +609,12 @@ void processKeys(unsigned char key, int xx, int yy)
 				if (spotlights[lightIndex].state == MySpotlightState::On) spotlights[lightIndex].turnOff();
 				else spotlights[lightIndex].turnOn();
 			}
+			break;
+		
+		case 'L':
+		case 'l':
+			if (flareEffect) flareEffect = false;
+			else if (pointlights[FLARE_POINTLIGHT].state == MyPointlightState::On) flareEffect = true;
 			break;
 
 		// ================= GAME STUFF =================
@@ -821,8 +849,7 @@ GLuint setupShaders() {
 // Model loading and OpenGL setup
 //
 
-int init()
-{
+int init() {
 	for (MyCamera* camera : cameras) {
 		// set the camera position based on its spherical coordinates
 		camera->position.x = camera->r * sin(camera->alpha * 3.14f / 180.0f) * cos(camera->beta * 3.14f / 180.0f);
@@ -849,8 +876,19 @@ int init()
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
 
+	//Flare elements textures
+	glGenTextures(5, FlareTextureArray);
+	Texture2D_Loader(FlareTextureArray, "./materials/crcl.tga", 0);
+	Texture2D_Loader(FlareTextureArray, "./materials/flar.tga", 1);
+	Texture2D_Loader(FlareTextureArray, "./materials/hxgn.tga", 2);
+	Texture2D_Loader(FlareTextureArray, "./materials/ring.tga", 3);
+	Texture2D_Loader(FlareTextureArray, "./materials/sun.tga", 4);
+
 	// Initialize Objects
 	initGameObjects();
+
+	// Initialize Flar
+	initFlare("./materials/flare.txt");
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
@@ -883,7 +921,6 @@ int main(int argc, char **argv) {
 	glutInitWindowSize(WinX, WinY);
 	WindowHandle = glutCreateWindow(CAPTION);
 
-
 	//  Callback Registration
 	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
@@ -899,8 +936,6 @@ int main(int argc, char **argv) {
 	glutMotionFunc(processMouseMotion);
 	glutMouseWheelFunc ( mouseWheel ) ;
 	
-
-
 	//	return from main loop
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 

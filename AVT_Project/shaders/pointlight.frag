@@ -175,7 +175,13 @@ void main() {
 	
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
 	else if (texMode == 4) colorOut = max(finalLightsColor, 0.37 * texel2 );
-	else if (mat.texCount == 0) colorOut = max(finalLightsColor, mat.ambient);
+	else if (texMode == 5) {
+
+		if ((texel0.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		else colorOut = mat.diffuse * texel0;
+		return;
+
+	} else if (mat.texCount == 0) colorOut = max(finalLightsColor, mat.ambient);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 

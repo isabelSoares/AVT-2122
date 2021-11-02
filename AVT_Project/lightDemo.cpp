@@ -141,12 +141,12 @@ const int TABLE_SIZE = 250;
 const int NUMBER_ORANGES = 15;
 const int CHECKER_LENGTH = 8;
 
-const int TREES_PER_MINIMUM = 1;
-const int TREES_PER_MAXIMUM = 6;
+const int TREES_PER_MINIMUM = 3;
+const int TREES_PER_MAXIMUM = 9;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
 
-const string font_name = "fonts/arial.ttf";
+const string font_name = "fonts/Acme-Regular.ttf";
 // ======================================================================================
 
 //External array storage defined in AVTmathLib.cpp
@@ -216,11 +216,13 @@ void initGameObjects() {
 				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 2, -0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
 				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5]) };
 	
-	trees = { MyBillboardTree(MyVec3{ -0.25 * TABLE_SIZE, 0, -10}, 6) };
 	float square_size = TABLE_SIZE / CHECKER_LENGTH;
+	std::vector<int> blackList = {3, 5, 10, 12, 14, 17, 21, 26, 30, 33, 37, 42, 46, 49, 51, 53, 58, 60};
 	for (int i = 1; i < CHECKER_LENGTH * CHECKER_LENGTH; i++) {
 
 		if ((i / CHECKER_LENGTH) % 2 == (i % CHECKER_LENGTH) % 2) continue;
+		if (std::find(blackList.begin(), blackList.end(), i) != blackList.end()) continue;
+
 
 		// Starting at top left of table
 		float startPosX = square_size * (i % CHECKER_LENGTH);
@@ -530,14 +532,16 @@ void renderScene(void) {
 	for (MyOrange& orange : oranges) { orange.render(shader); }
 	for (MyCandle& candle : candles) { candle.render(shader); }
 	car.render(shader);
-	// Trasparent Objects
-	glEnable(GL_BLEND);
-	glDepthMask(GL_FALSE);
-	for (MyPacketButter& butter : butters) { butter.render(shader); }
+
+	// Transparent with non transparent behavior
 	for (MyBillboardTree& tree : trees) {
 		tree.update(currentCamera->position);
 		tree.render(shader);
 	}
+	// Trasparent Objects
+	glEnable(GL_BLEND);
+	glDepthMask(GL_FALSE);
+	for (MyPacketButter& butter : butters) { butter.render(shader); }
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 

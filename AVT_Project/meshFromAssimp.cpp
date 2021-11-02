@@ -142,25 +142,29 @@ bool LoadGLTexturesTUs(const aiScene* scene)  // Create OGL textures objects and
 	int numTextures = textureIdMap.size();
 	printf("numeros de mapas %d\n", numTextures);
 
-	GLuint* textureIds = new GLuint[numTextures + 4];
-	glGenTextures(numTextures + 4, textureIds); /* Texture name generation */
+	if (numTextures) {
 
-	/* get iterator */
-	unordered_map<std::string, GLuint>::iterator itr = textureIdMap.begin();
-	filename = (*itr).first;  // get filename
+		GLuint* textureIds = new GLuint[numTextures + 4];
+		glGenTextures(numTextures + 4, textureIds); /* Texture name generation */
 
-	//create the texture objects array and asssociate them with TU and place the TU in the key value of the map
-	for (int i = 0; itr != textureIdMap.end(); ++i, ++itr)
-	{
+		/* get iterator */
+		unordered_map<std::string, GLuint>::iterator itr = textureIdMap.begin();
 		filename = (*itr).first;  // get filename
-		glActiveTexture(GL_TEXTURE0 + i + 4);
-		Texture2D_Loader(textureIds, filename.c_str(), i + 4);  //it already performs glBindTexture(GL_TEXTURE_2D, textureIds[i])
-		(*itr).second = i;	  // save texture unit for filename in map
-		//printf("textura = %s  TU = %d\n", filename.c_str(), i);
+
+		//create the texture objects array and asssociate them with TU and place the TU in the key value of the map
+		for (int i = 0; itr != textureIdMap.end(); ++i, ++itr)
+		{
+			filename = (*itr).first;  // get filename
+			glActiveTexture(GL_TEXTURE0 + i + 4);
+			Texture2D_Loader(textureIds, filename.c_str(), i + 4);  //it already performs glBindTexture(GL_TEXTURE_2D, textureIds[i])
+			(*itr).second = i;	  // save texture unit for filename in map
+			//printf("textura = %s  TU = %d\n", filename.c_str(), i);
+		}
+
+		//Cleanup
+		delete[] textureIds;
 	}
 
-	//Cleanup
-	delete[] textureIds;
 
 	return true;
 }

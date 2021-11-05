@@ -78,7 +78,6 @@ const int ORTHO_CAMERA_ACTIVE = 0;
 const int TOP_PERSPECTIVE_CAMERA_ACTIVE = 1;
 const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
 const int CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE = 3;
-const int CAR_BEHIND_PERSPECTIVE_CAMERA_ACTIVE = 4;
 
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
@@ -92,8 +91,7 @@ std::vector<MyCamera*> cameras = {
 	&orthoCamera ,
 	&topPerspectiveCamera,
 	&carCamera,
-	&carInsideCamera,
-	&carBehindCamera
+	&carInsideCamera
 };
 
 // ======================================================================================
@@ -275,6 +273,50 @@ void refresh(int value)
 void changeCameraSize() {
 
 	loadIdentity(PROJECTION);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glClearStencil(0x0);
+
+	// Has Stencil?
+	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) {
+
+		pushMatrix(PROJECTION);
+		pushMatrix(VIEW);
+		pushMatrix(MODEL);
+
+		/* create a diamond shaped stencil area */
+		loadIdentity(PROJECTION);
+		loadIdentity(VIEW);
+
+		int m_viewport[4];
+		glGetIntegerv(GL_VIEWPORT, m_viewport);
+
+		ortho(-2, 2, -2, 2, -1, 1);
+
+		glUseProgram(shader.getProgramIndex());
+
+		translate(MODEL, 0, 1.65, 0);
+		scale(MODEL, 0.83 * (1.887906f / ratio), 0.5, 1);
+		translate(MODEL, 0.045, 0, 0);
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		//glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		glStencilFunc(GL_NEVER, 0x1, 0x1);
+		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+
+		MyMesh mesh = createCube();
+
+		glBindVertexArray(mesh.vao);
+		glDrawElements(mesh.type, mesh.numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(PROJECTION);
+		popMatrix(VIEW);
+		popMatrix(MODEL);
+	}
 
 	MyCamera* currentCamera = cameras[activeCamera];
 	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
@@ -532,6 +574,9 @@ void renderScene(void) {
 
 	// ====================================================================================
 
+	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
 	// Non Transparent Objects
 	table.render(shader);
 	road.render(shader);
@@ -550,6 +595,46 @@ void renderScene(void) {
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
+
+	// Render back mirror
+	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) {
+
+		pushMatrix(VIEW);
+		pushMatrix(MODEL);
+
+		loadIdentity(VIEW);
+		loadIdentity(MODEL);
+
+		glStencilFunc(GL_EQUAL, 0x1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		MyCamera* backCamera = &carBehindCamera;
+		lookAt(backCamera->position.x, backCamera->position.y, backCamera->position.z, backCamera->lookAtPosition.x, backCamera->lookAtPosition.y, backCamera->lookAtPosition.z, 0, 1, 0);
+
+		dealWithLights();
+
+		// Non Transparent Objects
+		table.render(shader);
+		road.render(shader);
+		for (MyOrange& orange : oranges) { orange.render(shader); }
+		for (MyCandle& candle : candles) { candle.render(shader); }
+		car.render(shader);
+
+		// Transparent with non transparent behavior
+		for (MyBillboardTree& tree : trees) {
+			tree.update(currentCamera->position);
+			tree.render(shader);
+		}
+		// Trasparent Objects
+		glEnable(GL_BLEND);
+		glDepthMask(GL_FALSE);
+		for (MyPacketButter& butter : butters) { butter.render(shader); }
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+
+		popMatrix(VIEW);
+		popMatrix(MODEL);
+	}
 
 	if (flareEffect) {
 		pointlights[3].computeEyeStuff();
@@ -584,15 +669,19 @@ void renderScene(void) {
 	carInsideCamera.rotationDegrees = -(car.getDirectionDegrees() - 270.0f);
 
 	// Update Car Behind Camera
-	carBehindCamera.translation.x = carPosition.x - 0.6f * car.direction.x;
+	carBehindCamera.translation.x = carPosition.x - 0.05f * car.direction.x;
 	carBehindCamera.translation.y = carPosition.y + 1.18f;
-	carBehindCamera.translation.z = carPosition.z - 0.6f * car.direction.z;
-	carBehindCamera.lookAtPosition = carPosition - car.direction * MyVec3{ 10, 10, 10 } + MyVec3{ 0, 3, 0 };
+	carBehindCamera.translation.z = carPosition.z - 0.05f * car.direction.z;
+	carBehindCamera.lookAtPosition = carPosition - car.direction * MyVec3{ 10, 0, 10 } + MyVec3{ 0, -3.2, 0 };
 	carBehindCamera.rotationDegrees = -(car.getDirectionDegrees() - 90.0f);
 
 	currentCamera->updateCamera();
+	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) carBehindCamera.updateCamera();
 
 	game.update(car.getPosition());
+
+	glStencilFunc(GL_ALWAYS, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	// Render Text
 	glEnable(GL_BLEND);
@@ -633,10 +722,6 @@ void processKeys(unsigned char key, int xx, int yy) {
 			break;
 		case '4':
 			activeCamera = CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE;
-			changeCameraSize();
-			break;
-		case '5':
-			activeCamera = CAR_BEHIND_PERSPECTIVE_CAMERA_ACTIVE;
 			changeCameraSize();
 			break;
 
@@ -973,6 +1058,10 @@ int init() {
 	// Blending Stuff
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
+
+	// Stencil Stuff
+	glClearStencil(0x0);
+	glEnable(GL_STENCIL_TEST);
 }
 
 // ------------------------------------------------------------
@@ -984,7 +1073,7 @@ int main(int argc, char **argv) {
 
 	//  GLUT initialization
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_STENCIL|GLUT_MULTISAMPLE);
 
 	glutInitContextVersion (3, 3);
 	glutInitContextProfile (GLUT_CORE_PROFILE );

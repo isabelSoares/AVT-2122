@@ -211,38 +211,41 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 		glUniform1i(specularMap_loc, false);
 		glUniform1ui(diffMapCount_loc, 0);
 
-		if(meshes[nd->mMeshes[n]].mat.texCount != 0)  
+		if (meshes[nd->mMeshes[n]].mat.texCount != 0) {
+
 			for (unsigned int i = 0; i < meshes[nd->mMeshes[n]].mat.texCount; ++i) {
 				if (meshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
 					if (diffMapCount == 0) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 4);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 9);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 4);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 9);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 9);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 3);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 9);
 
 				}
 				else printf("Texture Map not supported\n");
 			}
 		
+		}
+
 		// send matrices to OGL
 		GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 		GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
@@ -512,13 +515,13 @@ MyCar::MyCar(MyVec3 positionTemp, std::vector<MySpotlight*> spotlightsTemp) {
 	}
 
 	// Deal with OBJs
-	carObj = MyAssimpObject("backpack", position + OBJ_TRANSLATION_VARIATION, scaling * OBJ_SCALING_VARIATION, {OBJ_ROTATION_VARIATION});
+	carObj = MyAssimpObject("CartoonGreenCar", position + OBJ_TRANSLATION_VARIATION, scaling * OBJ_SCALING_VARIATION, {OBJ_ROTATION_VARIATION});
 }
 
 void MyCar::render(VSShaderLib& shader) {
 
-	mainBlock.render(shader);
-	for (MyObject wheel : wheels) { wheel.render(shader); }
+	// mainBlock.render(shader);
+	// for (MyObject wheel : wheels) { wheel.render(shader); }
 		
 	// Render OBJ
 	carObj.render(shader, scene, scene->mRootNode);
@@ -634,8 +637,9 @@ void MyCar::updateObjects() {
 	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
 
 	carObj.scaleVec = scaling * OBJ_SCALING_VARIATION;
-	carObj.rotateVec = { MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0} };
-	carObj.positionVec = position + OBJ_TRANSLATION_VARIATION;
+	carObj.rotateVec = { OBJ_ROTATION_VARIATION, MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0} };
+	carObj.positionVec = position;
+	carObj.translationBeforeRotation = { OBJ_TRANSLATION_VARIATION };
 
 	mainBlock.scaleVec = scaling * MAIN_BLOCK_SCALING_VARIATION;
 	mainBlock.rotateVec = { MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0} };

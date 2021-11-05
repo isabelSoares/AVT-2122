@@ -115,7 +115,8 @@ public:
 
 	std::vector<MySpotlight*> spotlights;
 	// ============ Car Object Attributes ============
-	MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 1, 1, 1.5 };
+	// MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 1, 1, 1.5 };
+	MyVec3 MAIN_BLOCK_SCALING_VARIATION = MyVec3{ 2.4, 1, 4.4 };
 	MyVec3Rotation MAIN_BLOCK_ROTATION_VARIATION = MyVec3Rotation{-90, 0, 1, 0};
 	MyVec3 MAIN_BLOCK_TRANSLATION_VARIATION = MyVec3{ 0, 0.95, 0};
 	// =====
@@ -126,9 +127,9 @@ public:
 	MyVec3Rotation SPOTLIGHT_ROTATION_VARIATION = MyVec3Rotation{ -5, 1, 0, 0 };
 	MyVec3 SPOTLIGHTS_TRANSLATION_VARIATION[2] = { MyVec3{ 0.49, 1.80, -1}, MyVec3{ -0.49, 1.80, -1} };
 	// =====
-	MyVec3 OBJ_SCALING_VARIATION = MyVec3{ 1, 1, 1 };
-	MyVec3Rotation OBJ_ROTATION_VARIATION = MyVec3Rotation{-90, 0, 1, 0};
-	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{ 0, 0, 0};
+	MyVec3 OBJ_SCALING_VARIATION = MyVec3{ 0.07, 0.07, 0.07 };
+	MyVec3Rotation OBJ_ROTATION_VARIATION = MyVec3Rotation{ 180, 0, 1, 0 };
+	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{  327.1, 0.1, - 272.8};
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;

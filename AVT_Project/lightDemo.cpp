@@ -77,17 +77,23 @@ float ratio, window_width, window_height;
 const int ORTHO_CAMERA_ACTIVE = 0;
 const int TOP_PERSPECTIVE_CAMERA_ACTIVE = 1;
 const int CAR_PERSPECTIVE_CAMERA_ACTIVE = 2;
+const int CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE = 3;
+const int CAR_BEHIND_PERSPECTIVE_CAMERA_ACTIVE = 4;
 
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
 MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
 MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 130.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
 MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0});
+MyCamera carInsideCamera = MyCamera(MyCameraType::Perspective, 0, 15, 0.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera carBehindCamera = MyCamera(MyCameraType::Perspective, 0, 15, 0.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
 
 std::vector<MyCamera*> cameras = {
 	&orthoCamera ,
 	&topPerspectiveCamera,
 	&carCamera,
+	&carInsideCamera,
+	&carBehindCamera
 };
 
 // ======================================================================================
@@ -567,6 +573,23 @@ void renderScene(void) {
 	carCamera.translation.z = carPosition.z;
 	carCamera.lookAtPosition = carPosition;
 	carCamera.rotationDegrees = - (car.getDirectionDegrees() - 270.0f);
+
+	carPosition = car.getPosition();
+
+	// Update Car Inside Camera
+	carInsideCamera.translation.x = carPosition.x - 0.25f * car.direction.x;
+	carInsideCamera.translation.y = carPosition.y + 1.2f;
+	carInsideCamera.translation.z = carPosition.z - 0.25f * car.direction.z;
+	carInsideCamera.lookAtPosition = carPosition + car.direction * MyVec3{ 10, 10, 10 } + MyVec3{ 0, 1, 0 };
+	carInsideCamera.rotationDegrees = -(car.getDirectionDegrees() - 270.0f);
+
+	// Update Car Behind Camera
+	carBehindCamera.translation.x = carPosition.x - 0.6f * car.direction.x;
+	carBehindCamera.translation.y = carPosition.y + 1.18f;
+	carBehindCamera.translation.z = carPosition.z - 0.6f * car.direction.z;
+	carBehindCamera.lookAtPosition = carPosition - car.direction * MyVec3{ 10, 10, 10 } + MyVec3{ 0, 3, 0 };
+	carBehindCamera.rotationDegrees = -(car.getDirectionDegrees() - 90.0f);
+
 	currentCamera->updateCamera();
 
 	game.update(car.getPosition());
@@ -606,6 +629,14 @@ void processKeys(unsigned char key, int xx, int yy) {
 			break;
 		case '3':
 			activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
+			changeCameraSize();
+			break;
+		case '4':
+			activeCamera = CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE;
+			changeCameraSize();
+			break;
+		case '5':
+			activeCamera = CAR_BEHIND_PERSPECTIVE_CAMERA_ACTIVE;
 			changeCameraSize();
 			break;
 
@@ -942,7 +973,6 @@ int init() {
 	// Blending Stuff
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
-
 }
 
 // ------------------------------------------------------------

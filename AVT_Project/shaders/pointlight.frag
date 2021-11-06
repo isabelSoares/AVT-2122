@@ -13,6 +13,8 @@ uniform	sampler2D texUnitDiff1;
 uniform	sampler2D texUnitSpec;
 uniform	sampler2D texUnitNormalMap;
 
+uniform samplerCube cubeMap;
+
 uniform int texMode;
 
 uniform int fogActivated;
@@ -56,6 +58,8 @@ in Data {
 	// Spotlights
 	vec3 ls_directions[2];
 	vec3 ls_realDirections[2];
+
+	vec3 skyboxTexCoord;
 } DataIn;
 
 //Exponential Fog:
@@ -72,6 +76,8 @@ vec4 diff, auxSpec;
 void main() {
 
 	// ============================== COMMON CALCULATIONS ==============================
+
+	int numberOfLights = 0;
 
 	vec3 n = normalize(DataIn.normal);
 	vec3 e = normalize(DataIn.eye);
@@ -112,6 +118,8 @@ void main() {
 
 		if (ls_states[lightIndex] == 0) { continue; }
 
+		numberOfLights = numberOfLights + 1;
+
 		vec4 spec = vec4(0.0);
 		vec3 l = normalize(DataIn.ls_directions[lightIndex]);
 
@@ -137,6 +145,8 @@ void main() {
 	for (int lightIndex = 0 ; lightIndex < DataIn.ld_directions.length() ; lightIndex++ ) {
 
 		if (ld_states[lightIndex] == 0) { continue; }
+
+		numberOfLights = numberOfLights + 1;
 		
 		vec4 spec = vec4(0.0);
 		vec3 l = normalize(DataIn.ld_directions[lightIndex]);
@@ -162,6 +172,8 @@ void main() {
 
 		if (lp_states[lightIndex] == 0) { continue; }
 
+		numberOfLights = numberOfLights + 1;
+
 		vec4 spec = vec4(0.0);
 		vec3 l = normalize(DataIn.lp_directions[lightIndex]);
 
@@ -184,7 +196,7 @@ void main() {
 	colorOut = finalLightsColor;
 	
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
-	else if (texMode == 4) colorOut = max(finalLightsColor, 0.37 * texel2 );
+	else if (texMode == 4) colorOut = max(finalLightsColor / numberOfLights, 0.15 * texel2 );
 	else if (texMode == 5) {
 
 		if ((texel0.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
@@ -194,7 +206,7 @@ void main() {
 	} else if (texMode == 6) {
 	
 		if(texel3.a == 0.0) discard;
-		else colorOut = vec4(max(vec3(0.40 * finalLightsColor), 0.1*texel3.rgb), texel3.a);
+		else colorOut = vec4(max(vec3(finalLightsColor / numberOfLights), 0.1*texel3.rgb), texel3.a);
 
 	} else if (texMode == 7) {
 
@@ -203,7 +215,12 @@ void main() {
 
 		return;
 
-	} else if (mat.texCount == 0) colorOut = max(finalLightsColor, mat.ambient);
+	} else if (texMode == 8) {
+
+		colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
+		return;
+
+	} else if (mat.texCount == 0) colorOut = max(finalLightsColor / numberOfLights, diff * 0.1);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 

@@ -10,7 +10,7 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox };
 
 class MyObject {
 
@@ -129,7 +129,7 @@ public:
 	// =====
 	MyVec3 OBJ_SCALING_VARIATION = MyVec3{ 0.07, 0.07, 0.07 };
 	MyVec3Rotation OBJ_ROTATION_VARIATION = MyVec3Rotation{ 180, 0, 1, 0 };
-	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{  327.1, 0.4, - 272.8};
+	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{  327.1, 1.0, - 272.8};
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;
@@ -277,5 +277,18 @@ public:
 
 	bool isDead();
 	void revive(MyVec3 positionTemp, MyVec3 velocityTemp, MyVec3 accelarationTemp, float fadeTemp);
+};
+
+class MySkyBox {
+public:
+	// ============ SkyBox Objects ===============
+	MyObject skyBox;
+	// ============ SkyBox Attributes ============
+	// ============ SkyBox Attributes ============
+
+	MySkyBox();
+	MySkyBox(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+
+	void render(VSShaderLib& shader);
 };
 #endif

@@ -2,6 +2,7 @@
 
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
+uniform mat4 m_Model;   //por causa do cubo para a skybox
 uniform mat3 m_normal;
 
 uniform bool normalMap;
@@ -34,12 +35,17 @@ out Data {
 	// Spotlights
 	vec3 ls_directions[2];
 	vec3 ls_realDirections[2];
+
+	vec3 skyboxTexCoord;
 } DataOut;
 
 void main () {
 
 	vec4 pos = m_viewModel * position;
 	DataOut.pos = pos;
+
+	DataOut.skyboxTexCoord = vec3(m_Model * position);
+	DataOut.skyboxTexCoord.x = - DataOut.skyboxTexCoord.x;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	DataOut.eye = vec3(-pos);

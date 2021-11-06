@@ -192,9 +192,9 @@ void MyGame::renderHUD(VSShaderLib& shaderText, float window_width, float window
 	if (text_scale < MIN_TEXT_SCALE) text_scale = MIN_TEXT_SCALE;
 
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	RenderText(shaderText, get_number_lifes_line(START_LIFES, lifes), false, 0.02 * window_width, 0.95 * window_height, text_scale, 0.2f, 0.2f, 0.2f);
+	RenderText(shaderText, get_number_lifes_line(START_LIFES, lifes), false, 0.02 * window_width, 0.95 * window_height, text_scale, 0.8f, 0.8f, 0.8f);
 	std::string score_line = "$coin$ " + std::to_string((int) gameScore);
-	RenderText(shaderText, score_line, false,0.02 * window_width, 0.95 * window_height - 65.0f * text_scale, text_scale, 0.2, 0.2f, 0.2f);
+	RenderText(shaderText, score_line, false,0.02 * window_width, 0.95 * window_height - 65.0f * text_scale, text_scale, 0.8f, 0.8f, 0.8f);
 
 	if (state != MyGameState::Running) renderSquareScreen(shaderText, window_width, window_height);
 

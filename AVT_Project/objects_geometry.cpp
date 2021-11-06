@@ -31,6 +31,7 @@
 
 using namespace std;
 
+extern float mMatrix[COUNT_MATRICES][16];
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 extern float mNormal3x3[9];
 
@@ -70,6 +71,7 @@ void MyObject::render(VSShaderLib& shader) {
 	GLint pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	GLint normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
+	GLint model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
 	GLint lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
 	GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 
@@ -81,12 +83,15 @@ void MyObject::render(VSShaderLib& shader) {
 	else if (textureOption == MyTextureOption::Orange) glUniform1i(texMode_uniformId, 4);
 	else if (textureOption == MyTextureOption::Tree) glUniform1i(texMode_uniformId, 6);
 	else if (textureOption == MyTextureOption::WaterParticle) glUniform1i(texMode_uniformId, 7);
+	else if (textureOption == MyTextureOption::SkyBox) glUniform1i(texMode_uniformId, 8);
 	else glUniform1i(texMode_uniformId, 0);
 
 	// Parameters from OBJs
 	glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
 	glUniform1i(specularMap_loc, false);
 	glUniform1ui(diffMapCount_loc, 0);
+
+	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]);
 
 	// send matrices to OGL5
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -219,27 +224,27 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 					if (diffMapCount == 0) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 10);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 10);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 10);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 10);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
 
 				}
 				else printf("Texture Map not supported\n");
@@ -965,4 +970,46 @@ void MyWaterParticle::revive(MyVec3 positionTemp, MyVec3 velocityTemp, MyVec3 ac
 	fade = fadeTemp;
 
 	lifespan = 1.0f;
+}
+
+MySkyBox::MySkyBox() {}
+MySkyBox::MySkyBox(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+
+	MyMesh skyBoxMesh = createCube();
+
+	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
+	float diff[] = { 0.8f, 0.40f, 0.0f, 1.0f };
+	float spec[] = { 0.3f, 0.15f, 0.0f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 50.0f;
+	int texcount = 0;
+
+	memcpy(skyBoxMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(skyBoxMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(skyBoxMesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(skyBoxMesh.mat.emissive, emissive, 4 * sizeof(float));
+	skyBoxMesh.mat.shininess = shininess;
+	skyBoxMesh.mat.texCount = texcount;
+
+	skyBox = MyObject(skyBoxMesh, initialPositionTemp, initialScaleTemp, {});
+	skyBox.textureOption = MyTextureOption::SkyBox;
+}
+
+void MySkyBox::render(VSShaderLib& shader) {
+
+	glDepthMask(GL_FALSE);
+	glFrontFace(GL_CW);
+
+	pushMatrix(VIEW);
+
+	mMatrix[VIEW][12] = 0.0f;
+	mMatrix[VIEW][13] = 0.0f;
+	mMatrix[VIEW][14] = 0.0f;
+
+	skyBox.render(shader);
+
+	popMatrix(VIEW);
+
+	glFrontFace(GL_CCW);
+	glDepthMask(GL_TRUE);
 }

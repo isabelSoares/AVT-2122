@@ -62,6 +62,8 @@ VSShaderLib shaderText;  //render bitmap text
 
 // =================================== RENDER OBJECTS ===================================
 
+MySkyBox skyBox;
+
 MyTable table;
 MyRoad road;
 MyCar car;
@@ -147,7 +149,7 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 0;
+const int NUMBER_ORANGES = 15;
 const int NUMBER_PARTICLES = 2;
 const int TIME_PARTICLES = 200;
 const int CHECKER_LENGTH = 8;
@@ -171,6 +173,7 @@ extern float mNormal3x3[9];
 
 GLint pvm_uniformId;
 GLint vm_uniformId;
+GLint model_uniformId;
 GLint normal_uniformId;
 
 GLint fogActivated_uniformId;
@@ -190,9 +193,9 @@ GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 
 // Textures UniformID
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_cube_loc;
 GLint texMode_uniformId;
-GLuint TextureArray[5];
+GLuint TextureArray[6];
 GLuint FlareTextureArray[5];
 
 // Assimp UniformID
@@ -208,6 +211,8 @@ long myTime,timebase = 0,frame = 0;
 char s[32];
 
 void initGameObjects() {
+
+	skyBox = MySkyBox(MyVec3{ 0, 0, 0 }, MyVec3{ 500, 500, 500 });
 
 	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
@@ -278,7 +283,7 @@ void generateNeededParticles() {
 
 			MyVec3 velocity = MyVec3{ posX / 100, 0.12, posZ / 100 };
 			MyVec3 accelaration = MyVec3{ 0, -0.0008, 0 };
-			MyWaterParticle particle = MyWaterParticle(MyVec3{ -0.25f * TABLE_SIZE + sideNormalized * 10 + posX, 0, posZ }, velocity, accelaration, 0.0036f, 1.0f);
+			MyWaterParticle particle = MyWaterParticle(MyVec3{ -0.25f * TABLE_SIZE + sideNormalized * 10 + posX, 0, posZ }, velocity, accelaration, 0.0036f + 0.0004 * frand() - 0.00039, 1.0f);
 
 			particles.push_back(particle);
 
@@ -330,8 +335,8 @@ void changeCameraSize() {
 
 		glUseProgram(shader.getProgramIndex());
 
-		translate(MODEL, 0, 1.77, 0);
-		scale(MODEL, 0.83 * (1.887906f / ratio), 0.5, 1);
+		translate(MODEL, 0, 1.74, 0);
+		scale(MODEL, 0.831 * (1.887906f / ratio), 0.5, 1);
 		translate(MODEL, 0.045, 0, 0);
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -556,24 +561,23 @@ void renderScene(void) {
 	// Deal with Textures
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
-
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
-
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
-
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
-
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[5]);
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc4, 4);
+	glUniform1i(tex_cube_loc, 5);
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
 
@@ -617,6 +621,8 @@ void renderScene(void) {
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
+	skyBox.render(shader);
+
 	// Non Transparent Objects
 	table.render(shader);
 	road.render(shader);
@@ -659,6 +665,8 @@ void renderScene(void) {
 		lookAt(backCamera->position.x, backCamera->position.y, backCamera->position.z, backCamera->lookAtPosition.x, backCamera->lookAtPosition.y, backCamera->lookAtPosition.z, 0, 1, 0);
 
 		dealWithLights();
+
+		skyBox.render(shader);
 
 		// Non Transparent Objects
 		table.render(shader);
@@ -714,16 +722,16 @@ void renderScene(void) {
 
 	// Update Car Inside Camera
 	carInsideCamera.translation.x = carPosition.x - 0.25f * car.direction.x;
-	carInsideCamera.translation.y = carPosition.y + 1.2f;
+	carInsideCamera.translation.y = carPosition.y + 1.25f;
 	carInsideCamera.translation.z = carPosition.z - 0.25f * car.direction.z;
 	carInsideCamera.lookAtPosition = carPosition + car.direction * MyVec3{ 10, 10, 10 } + MyVec3{ 0, 1, 0 };
 	carInsideCamera.rotationDegrees = -(car.getDirectionDegrees() - 270.0f);
 
 	// Update Car Behind Camera
 	carBehindCamera.translation.x = carPosition.x - 0.05f * car.direction.x;
-	carBehindCamera.translation.y = carPosition.y + 1.18f;
+	carBehindCamera.translation.y = carPosition.y + 1.21f;
 	carBehindCamera.translation.z = carPosition.z - 0.05f * car.direction.z;
-	carBehindCamera.lookAtPosition = carPosition - car.direction * MyVec3{ 10, 0, 10 } + MyVec3{ 0, -3.2, 0 };
+	carBehindCamera.lookAtPosition = carPosition - car.direction * MyVec3{ 10, 0, 10 } + MyVec3{ 0, -2.9, 0 };
 	carBehindCamera.rotationDegrees = -(car.getDirectionDegrees() - 90.0f);
 
 	currentCamera->updateCamera();
@@ -1013,6 +1021,7 @@ GLuint setupShaders() {
 
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
+	model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 
 
@@ -1039,6 +1048,7 @@ GLuint setupShaders() {
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
+	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 
 	// Assimp Shader UniformID
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
@@ -1086,12 +1096,15 @@ int init() {
 		SymbolInformation{"coin", "./materials/coin.png"}
 	});
 
-	glGenTextures(5, TextureArray);
+	glGenTextures(6, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
 	Texture2D_Loader(TextureArray, "./materials/tree.tga", 3);
 	Texture2D_Loader(TextureArray, "./materials/particle.tga", 4);
+	//const char* filenames[] = { "./materials/posX.png", "./materials/negX.png", "./materials/posY.png", "./materials/negY.png", "./materials/posZ.png", "./materials/negZ.png" };
+	const char* filenames[] = { "./materials/skyBox/right.png", "./materials/skyBox/left.png", "./materials/skyBox/top.png", "./materials/skyBox/bot.png", "./materials/skyBox/front.png", "./materials/skyBox/back.png" };
+	TextureCubeMap_Loader(TextureArray, filenames, 5);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);

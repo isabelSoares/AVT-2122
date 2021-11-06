@@ -47,6 +47,8 @@
 #include "objects_geometry.h"
 #include "game.h"
 
+#define frand()			((float)rand()/RAND_MAX)
+
 using namespace std;
 
 #define CAPTION "AVT Per Fragment Phong Lightning Demo"
@@ -137,6 +139,8 @@ MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
 const int FLARE_POINTLIGHT = 3;
 std::vector<char*> flareTextureNames =  {"crcl", "flar", "hxgn", "ring", "sun"};
 
+int timesToGenerateParticles = 0;
+
 // =====================================================================================
 
 // =================================== OTHER CONSTANTS ==================================
@@ -144,7 +148,8 @@ const int FPS = 60;
 
 const int TABLE_SIZE = 250;
 const int NUMBER_ORANGES = 0;
-const int NUMBER_PARTICLES = 1;
+const int NUMBER_PARTICLES = 2;
+const int TIME_PARTICLES = 200;
 const int CHECKER_LENGTH = 8;
 
 const int TREES_PER_MINIMUM = 3;
@@ -250,18 +255,35 @@ void initGameObjects() {
 	};
 
 	particles = {};
-	for (int i = 0; i < NUMBER_PARTICLES; i++) {
-
-		MyVec3 velocity = MyVec3{ 0, 0.12, 0 };
-		MyVec3 accelaration = MyVec3{ 0, - 0.0008, 0 };
-		MyWaterParticle particle = MyWaterParticle(MyVec3{ -0.25f * TABLE_SIZE, 0, -5 }, velocity, accelaration, 0.0036f, 1.0f);
-
-		particles.push_back(particle);
-
-	}
+	timesToGenerateParticles = 0;
 
 	START_POSITION = MyVec3{ -0.25 * TABLE_SIZE, 0, 0 };
 	car.position = START_POSITION;
+}
+
+void generateNeededParticles() {
+
+	if (timesToGenerateParticles <= 0) return;
+
+	timesToGenerateParticles = timesToGenerateParticles - 1;
+
+	for (int side = 0; side < 2; side++) {
+
+		int sideNormalized = side * 2 - 1;
+
+		for (int i = 0; i < NUMBER_PARTICLES; i++) {
+
+			float posX = 0.8 * frand() - 0.4;
+			float posZ = 0.8 * frand() - 0.4;
+
+			MyVec3 velocity = MyVec3{ posX / 100, 0.12, posZ / 100 };
+			MyVec3 accelaration = MyVec3{ 0, -0.0008, 0 };
+			MyWaterParticle particle = MyWaterParticle(MyVec3{ -0.25f * TABLE_SIZE + sideNormalized * 10 + posX, 0, posZ }, velocity, accelaration, 0.0036f, 1.0f);
+
+			particles.push_back(particle);
+
+		}
+	}
 }
 
 void timer(int value) {
@@ -308,7 +330,7 @@ void changeCameraSize() {
 
 		glUseProgram(shader.getProgramIndex());
 
-		translate(MODEL, 0, 1.65, 0);
+		translate(MODEL, 0, 1.77, 0);
 		scale(MODEL, 0.83 * (1.887906f / ratio), 0.5, 1);
 		translate(MODEL, 0.045, 0, 0);
 		// send matrices to OGL
@@ -611,14 +633,9 @@ void renderScene(void) {
 	glEnable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
+	particles.erase(std::remove_if(particles.begin(), particles.end(), [](MyWaterParticle i) { return i.isDead(); }), particles.end());
+	generateNeededParticles();
 	for (MyWaterParticle& particle : particles) {
-
-		if (particle.isDead()) {
-
-			MyVec3 velocity = MyVec3{ 0, 0.12, 0 };
-			MyVec3 accelaration = MyVec3{ 0, -0.0008, 0 };
-			particle.revive(MyVec3{ -0.25f * TABLE_SIZE, 0, -5 }, velocity, accelaration, 0.0036f);
-		}
 
 		particle.update(currentCamera->position);
 		particle.render(shader);
@@ -819,6 +836,11 @@ void processKeys(unsigned char key, int xx, int yy) {
 		case 'R':
 		case 'r':
 			game.restartGame();
+			break;
+
+		case 'W':
+		case 'w':
+			timesToGenerateParticles = TIME_PARTICLES;
 			break;
 
 		// ================= OTHER STUFF =================

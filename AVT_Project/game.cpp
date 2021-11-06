@@ -22,6 +22,9 @@
 extern float mCompMatrix[COUNT_COMPUTED_MATRICES][16];
 extern float mNormal3x3[9];
 
+extern int timesToGenerateParticles;
+extern const int TIME_PARTICLES = 200;
+
 // ============================ AUXILIARY FUNCTIONS ============================
 
 std::string get_number_lifes_line(int MAX_LIFES, int lifes) {
@@ -118,8 +121,14 @@ void MyGame::update(MyVec3 carPosition) {
 	// Front Movement
 	if (movementAngle > 0.0f || (movementAngle < 0.0f && fabs(movementAngle) > 180.0f)) {
 		if (movementPointsAngle > 0.0f || (movementPointsAngle < 0.0f && fabs(movementPointsAngle) > 180.0f)) {
+
+			if (lastValidAngle < 155.0f && angleDegrees >= 155.0f) {
+				timesToGenerateParticles = TIME_PARTICLES;
+			}
+
 			lastValidAngle = angleDegrees;
 			gameScore = gameScore + fabs(movementPointsAngle);
+
 		}
 	}
 

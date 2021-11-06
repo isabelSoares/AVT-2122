@@ -199,7 +199,7 @@ void main() {
 	} else if (texMode == 7) {
 
 		if ((texel4.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
-		else colorOut = mat.diffuse * texel4;
+		else colorOut = max(finalLightsColor / 5, mat.diffuse) * texel4;
 
 		return;
 

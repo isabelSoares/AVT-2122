@@ -901,9 +901,7 @@ void MyBillboardTree::update(MyVec3 camPosition) {
 
 	float camPositionTransformed[3] = { camPosition.x, camPosition.y, camPosition.z };
 	float positionTransformed[3] = { position.x, position.y, position.z };
-	MyVec3Rotation rotateBillboard = l3dBillboardCylindricalBegin(camPositionTransformed, positionTransformed);
-
-	billboardTree.rotateVec = { rotateBillboard };
+	billboardTree.rotateVec = l3dBillboardCylindricalBegin(camPositionTransformed, positionTransformed);
 }
 
 MyWaterParticle::MyWaterParticle() {}
@@ -954,9 +952,7 @@ void MyWaterParticle::update(MyVec3 camPosition) {
 
 	float camPositionTransformed[3] = { camPosition.x, camPosition.y, camPosition.z };
 	float positionTransformed[3] = { position.x, position.y, position.z };
-	MyVec3Rotation rotateBillboard = l3dBillboardCylindricalBegin(camPositionTransformed, positionTransformed);
-
-	particle.rotateVec = { rotateBillboard };
+	particle.rotateVec = l3dBillboardSphericalBegin(camPositionTransformed, positionTransformed);
 }
 
 bool MyWaterParticle::isDead() { return lifespan <= 0.0f;  }

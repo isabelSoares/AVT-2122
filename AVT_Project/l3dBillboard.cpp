@@ -11,7 +11,7 @@ The objects motion is restricted to a rotation on a predefined axis
 The function bellow does cylindrical billboarding on the Y axis, i.e.
 the object will be able to rotate on the Y axis only.
 -----------------------------------------------------------------*/
-MyVec3Rotation l3dBillboardCylindricalBegin(float *cam, float *worldPos) {
+std::vector<MyVec3Rotation> l3dBillboardCylindricalBegin(float *cam, float *worldPos) {
 	
 	float lookAt[3]={0,0,1},objToCamProj[3],upAux[3],angleCosine;
 
@@ -39,9 +39,9 @@ MyVec3Rotation l3dBillboardCylindricalBegin(float *cam, float *worldPos) {
 // if the lookAt and v vectors are too close together then |aux| could
 // be bigger than 1 due to lack of precision
 	if ((angleCosine < 0.99990) && (angleCosine > -0.9999))
-		return MyVec3Rotation{ float(acos(angleCosine) * 180 / 3.14), upAux[0], upAux[1], upAux[2] };
-	else if (angleCosine > 0) return MyVec3Rotation{ 0, 0, 1, 0 };
-	else if (angleCosine < 0) return MyVec3Rotation{ 180, 0, 1, 0 };
+		return { MyVec3Rotation{ float(acos(angleCosine) * 180 / 3.14), upAux[0], upAux[1], upAux[2] } };
+	else if (angleCosine > 0) return { MyVec3Rotation{ 0, 0, 1, 0 } };
+	else if (angleCosine < 0) return { MyVec3Rotation{ 180, 0, 1, 0 } };
 }
 
 
@@ -52,7 +52,9 @@ the cylindrical billboard though. The parameters camX,camY, and camZ,
 are the target, i.e. a 3D point to which the object will point.
 ----------------------------------------------------------------*/
 
-void l3dBillboardSphericalBegin(float *cam, float *worldPos) {
+std::vector<MyVec3Rotation> l3dBillboardSphericalBegin(float *cam, float *worldPos) {
+
+	std::vector<MyVec3Rotation> rotations = {};
 
 	float lookAt[3]={0,0,1},objToCamProj[3],objToCam[3],upAux[3],angleCosine;
 
@@ -79,7 +81,9 @@ void l3dBillboardSphericalBegin(float *cam, float *worldPos) {
 // if the lookAt and v vectors are too close together then |aux| could
 // be bigger than 1 due to lack of precision
 	if ((angleCosine < 0.99990) && (angleCosine > -0.9999))
-		rotate(MODEL,acos(angleCosine)*180/3.14,upAux[0], upAux[1], upAux[2]);
+		rotations.push_back({ MyVec3Rotation{ float(acos(angleCosine) * 180 / 3.14), upAux[0], upAux[1], upAux[2] } });
+	else if (angleCosine > 0) rotations.push_back(MyVec3Rotation{ 0, 0, 1, 0 });
+	else if (angleCosine < 0) rotations.push_back(MyVec3Rotation{ 180, 0, 1, 0 });
 
 
 // The second part tilts the object so that it faces the camera
@@ -101,10 +105,13 @@ void l3dBillboardSphericalBegin(float *cam, float *worldPos) {
 // angle between them
 	if ((angleCosine < 0.99990) && (angleCosine > -0.9999))
 		if (objToCam[1] < 0)
-			rotate(MODEL,acos(angleCosine)*180/3.14,1,0,0);
+			rotations.push_back(MyVec3Rotation{ float(acos(angleCosine) * 180 / 3.14), 1, 0, 0 });
 		else
-			rotate(MODEL,acos(angleCosine)*180/3.14,-1,0,0);
+			rotations.push_back(MyVec3Rotation{ float(acos(angleCosine) * 180 / 3.14), -1, 0, 0 });
+	else if (angleCosine > 0) rotations.push_back(MyVec3Rotation{ 0, 0, 1, 0 });
+	else if (angleCosine < 0) rotations.push_back(MyVec3Rotation{ 180, 0, 1, 0 });
 
+	return rotations;
 }
 
 /* --------------------------------------------------------

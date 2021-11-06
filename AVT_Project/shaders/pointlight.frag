@@ -6,6 +6,7 @@ uniform sampler2D texmap0;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
+uniform sampler2D texmap4;
 
 uniform	sampler2D texUnitDiff;
 uniform	sampler2D texUnitDiff1;
@@ -78,13 +79,14 @@ void main() {
 	if(normalMap)
 		n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
 
-	vec4 texel0, texel1, texel2, texel3;
+	vec4 texel0, texel1, texel2, texel3, texel4;
 	
 	if (texMode != 0) {
 		texel0 = texture(texmap0, DataIn.tex_coord);  // texel from roadGrass2.jpg
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from lighwood.tga
 		texel2 = texture(texmap2, DataIn.tex_coord);  // texel from orange.jpg
 		texel3 = texture(texmap3, DataIn.tex_coord);  // texel from tree.tga
+		texel4 = texture(texmap4, DataIn.tex_coord);  // texel from particle.tga
 	}
 
 	// Auxiliary Variables for OBJs
@@ -127,6 +129,7 @@ void main() {
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else if (texMode == 6) finalLightsColor += intensity * texel3 + spec;
+		else if (texMode == 7) finalLightsColor += intensity * texel4 + spec;
 		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
 
@@ -150,6 +153,7 @@ void main() {
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else if (texMode == 6) finalLightsColor += intensity * texel3 + spec;
+		else if (texMode == 7) finalLightsColor += intensity * texel4 + spec;
 		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
 	
@@ -173,6 +177,7 @@ void main() {
 		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
 		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
 		else if (texMode == 6) finalLightsColor += intensity * texel3 + spec;
+		else if (texMode == 7) finalLightsColor += intensity * texel4 + spec;
 		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
 
@@ -190,6 +195,13 @@ void main() {
 	
 		if(texel3.a == 0.0) discard;
 		else colorOut = vec4(max(vec3(0.40 * finalLightsColor), 0.1*texel3.rgb), texel3.a);
+
+	} else if (texMode == 7) {
+
+		if ((texel4.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
+		else colorOut = mat.diffuse * texel4;
+
+		return;
 
 	} else if (mat.texCount == 0) colorOut = max(finalLightsColor, mat.ambient);
 

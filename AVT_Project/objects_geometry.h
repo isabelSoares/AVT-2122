@@ -10,7 +10,7 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle };
 
 class MyObject {
 
@@ -250,5 +250,32 @@ public:
 
 	void render(VSShaderLib& shader);
 	void update(MyVec3 camPosition);
+};
+
+class MyWaterParticle {
+public:
+	// ============ Water Particle Objects ===============
+	MyObject particle;
+	// ============ Water Particle Attributes ============
+	MyVec3 position;
+	MyVec3 velocity;
+	MyVec3 accelaration;
+
+	float lifespan = 1.0f;
+	float fade;
+
+	MyVec3 scaling = MyVec3{ 1, 1, 1 };
+
+	float size;
+
+
+	MyWaterParticle();
+	MyWaterParticle(MyVec3 positionTemp, MyVec3 velocityTemp, MyVec3 accelarationTemp, float fadeTemp, float sizeTemp);
+
+	void render(VSShaderLib& shader);
+	void update(MyVec3 camPosition);
+
+	bool isDead();
+	void revive(MyVec3 positionTemp, MyVec3 velocityTemp, MyVec3 accelarationTemp, float fadeTemp);
 };
 #endif

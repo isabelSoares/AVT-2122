@@ -67,6 +67,7 @@ std::vector<MyOrange> oranges;
 std::vector<MyPacketButter> butters;
 std::vector<MyCandle> candles;
 std::vector<MyBillboardTree> trees;
+std::vector<MyWaterParticle> particles;
 
 // ======================================================================================
 
@@ -142,7 +143,8 @@ std::vector<char*> flareTextureNames =  {"crcl", "flar", "hxgn", "ring", "sun"};
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 15;
+const int NUMBER_ORANGES = 0;
+const int NUMBER_PARTICLES = 1;
 const int CHECKER_LENGTH = 8;
 
 const int TREES_PER_MINIMUM = 3;
@@ -183,9 +185,9 @@ GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 
 // Textures UniformID
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4;
 GLint texMode_uniformId;
-GLuint TextureArray[4];
+GLuint TextureArray[5];
 GLuint FlareTextureArray[5];
 
 // Assimp UniformID
@@ -221,6 +223,7 @@ void initGameObjects() {
 				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5]) };
 	
 	float square_size = TABLE_SIZE / CHECKER_LENGTH;
+	trees = {};
 	std::vector<int> blackList = {3, 5, 10, 12, 14, 17, 21, 26, 30, 33, 37, 42, 46, 49, 51, 53, 58, 60};
 	for (int i = 1; i < CHECKER_LENGTH * CHECKER_LENGTH; i++) {
 
@@ -245,6 +248,17 @@ void initGameObjects() {
 		}
 		
 	};
+
+	particles = {};
+	for (int i = 0; i < NUMBER_PARTICLES; i++) {
+
+		MyVec3 velocity = MyVec3{ 0, 0.12, 0 };
+		MyVec3 accelaration = MyVec3{ 0, - 0.0008, 0 };
+		MyWaterParticle particle = MyWaterParticle(MyVec3{ -0.25f * TABLE_SIZE, 0, -5 }, velocity, accelaration, 0.0036f, 1.0f);
+
+		particles.push_back(particle);
+
+	}
 
 	START_POSITION = MyVec3{ -0.25 * TABLE_SIZE, 0, 0 };
 	car.position = START_POSITION;
@@ -530,10 +544,14 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
+
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
 	glUniform1i(tex_loc2, 2);
 	glUniform1i(tex_loc3, 3);
+	glUniform1i(tex_loc4, 4);
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
 
@@ -593,6 +611,18 @@ void renderScene(void) {
 	glEnable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
+	for (MyWaterParticle& particle : particles) {
+
+		if (particle.isDead()) {
+
+			MyVec3 velocity = MyVec3{ 0, 0.12, 0 };
+			MyVec3 accelaration = MyVec3{ 0, -0.0008, 0 };
+			particle.revive(MyVec3{ -0.25f * TABLE_SIZE, 0, -5 }, velocity, accelaration, 0.0036f);
+		}
+
+		particle.update(currentCamera->position);
+		particle.render(shader);
+	}
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 
@@ -629,6 +659,10 @@ void renderScene(void) {
 		glEnable(GL_BLEND);
 		glDepthMask(GL_FALSE);
 		for (MyPacketButter& butter : butters) { butter.render(shader); }
+		for (MyWaterParticle& particle : particles) {
+			particle.update(currentCamera->position);
+			particle.render(shader);
+		}
 		glDepthMask(GL_TRUE);
 		glDisable(GL_BLEND);
 
@@ -982,6 +1016,7 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
+	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 
 	// Assimp Shader UniformID
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
@@ -1029,11 +1064,12 @@ int init() {
 		SymbolInformation{"coin", "./materials/coin.png"}
 	});
 
-	glGenTextures(4, TextureArray);
+	glGenTextures(5, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
 	Texture2D_Loader(TextureArray, "./materials/tree.tga", 3);
+	Texture2D_Loader(TextureArray, "./materials/particle.tga", 4);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);
@@ -1053,7 +1089,8 @@ int init() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
-	glClearColor(0.6f, 0.8f, 1.0f, 1.0f);
+	//glClearColor(0.6f, 0.8f, 1.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Blending Stuff
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

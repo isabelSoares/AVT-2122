@@ -10,7 +10,8 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox, CubeReflector, Cheerio };
+enum class MyBumpMapOption { None, Cheerio };
 
 class MyObject {
 
@@ -22,6 +23,8 @@ public:
 	std::vector<MyVec3> translationBeforeRotation = {};
 
 	MyTextureOption textureOption = MyTextureOption::None;
+	bool reflectedPerFrag = false;
+	MyBumpMapOption bumpmapOption = MyBumpMapOption::None;
 
 	MyObject();
 	MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateVec);
@@ -288,6 +291,19 @@ public:
 
 	MySkyBox();
 	MySkyBox(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+
+	void render(VSShaderLib& shader);
+};
+
+class MyCubeReflector {
+public:
+	// ============ Cube Reflector Objects ===============
+	MyObject cube;
+	// ============ Cube Reflector Attributes ============
+	// ============ Cube Reflector Attributes ============
+
+	MyCubeReflector();
+	MyCubeReflector(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
 
 	void render(VSShaderLib& shader);
 };

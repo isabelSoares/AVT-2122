@@ -2,10 +2,15 @@
 
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
-uniform mat4 m_Model;   //por causa do cubo para a skybox
+uniform mat4 m_Model;
+uniform mat4 m_View;
 uniform mat3 m_normal;
 
 uniform bool normalMap;
+
+uniform int texMode;
+uniform int reflect_perFrag;
+uniform int bumpMode;
 
 // Pointlights
 uniform vec4 lp_positions[6];
@@ -37,6 +42,7 @@ out Data {
 	vec3 ls_realDirections[2];
 
 	vec3 skyboxTexCoord;
+	vec3 reflected;
 } DataOut;
 
 void main () {
@@ -56,7 +62,7 @@ void main () {
 	vec3 t, b;
 	vec3 aux;
 
-	if(normalMap)  {  //transform eye and light vectors by tangent basis
+	if(normalMap || bumpMode != 0)  {
 		t = normalize(m_normal * tangent.xyz);
 		b = normalize(m_normal * bitangent.xyz);
 
@@ -108,6 +114,11 @@ void main () {
 			aux.z = dot(DataOut.ld_directions[lightIndex], DataOut.normal);
 			DataOut.ld_directions[lightIndex] = normalize(aux);
 		}
+	}
+
+	if ((texMode == 9) && (reflect_perFrag == 0)) {
+		DataOut.reflected = vec3 (transpose(m_View) * vec4 (vec3(reflect(-DataOut.eye, DataOut.normal)), 0.0)); 
+		DataOut.reflected.x= -DataOut.reflected.x;
 	}
 
 	gl_Position = m_pvm * position;	

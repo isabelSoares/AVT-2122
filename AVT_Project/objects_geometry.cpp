@@ -39,6 +39,8 @@ extern Assimp::Importer importer;
 extern const aiScene* scene;
 char model_dir[50];
 
+extern bool bumpMapping;
+
 MyObject::MyObject() {}
 MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateTemp) {
 	mesh = meshTemp;
@@ -72,8 +74,12 @@ void MyObject::render(VSShaderLib& shader) {
 	GLint vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	GLint normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 	GLint model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
+	GLint view_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_View");
 	GLint lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_positions");
 	GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
+
+	GLint reflect_perFragment_uniformId = glGetUniformLocation(shader.getProgramIndex(), "reflect_perFrag");
+	GLint bumpMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "bumpMode");
 
 	GLint normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	GLint specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
@@ -84,14 +90,25 @@ void MyObject::render(VSShaderLib& shader) {
 	else if (textureOption == MyTextureOption::Tree) glUniform1i(texMode_uniformId, 6);
 	else if (textureOption == MyTextureOption::WaterParticle) glUniform1i(texMode_uniformId, 7);
 	else if (textureOption == MyTextureOption::SkyBox) glUniform1i(texMode_uniformId, 8);
+	else if (textureOption == MyTextureOption::CubeReflector) glUniform1i(texMode_uniformId, 9);
+	else if (textureOption == MyTextureOption::Cheerio) glUniform1i(texMode_uniformId, 10);
 	else glUniform1i(texMode_uniformId, 0);
+
+	glUniform1i(reflect_perFragment_uniformId, reflectedPerFrag ? 1 : 0);
 
 	// Parameters from OBJs
 	glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
 	glUniform1i(specularMap_loc, false);
 	glUniform1ui(diffMapCount_loc, 0);
 
+	if (bumpMapping) {
+		if (bumpmapOption == MyBumpMapOption::None) glUniform1i(bumpMode_uniformId, 0);
+		else if (bumpmapOption == MyBumpMapOption::Cheerio) glUniform1i(bumpMode_uniformId, 1);
+
+	} else glUniform1i(bumpMode_uniformId, 0);
+
 	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]);
+	glUniformMatrix4fv(view_uniformId, 1, GL_FALSE, mMatrix[VIEW]);
 
 	// send matrices to OGL5
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -224,27 +241,27 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 					if (diffMapCount == 0) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 11);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
 
 				}
 				else printf("Texture Map not supported\n");
@@ -308,6 +325,8 @@ MyCheerio::MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float ou
 	MyVec3 cheerioScale = MyVec3{ 1, 2.3, 1 };
 
 	cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
+	cheerio.textureOption = MyTextureOption::Cheerio;
+	cheerio.bumpmapOption = MyBumpMapOption::Cheerio;
 }
 
 void MyCheerio::render(VSShaderLib& shader) {
@@ -1012,4 +1031,33 @@ void MySkyBox::render(VSShaderLib& shader) {
 
 	glFrontFace(GL_CCW);
 	glDepthMask(GL_TRUE);
+}
+
+MyCubeReflector::MyCubeReflector() {}
+MyCubeReflector::MyCubeReflector(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
+
+	MyMesh cubeMesh = createCube();
+
+	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
+	float diff[] = { 0.8f, 0.40f, 0.0f, 1.0f };
+	float spec[] = { 0.3f, 0.15f, 0.0f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 50.0f;
+	int texcount = 0;
+
+	memcpy(cubeMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(cubeMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(cubeMesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(cubeMesh.mat.emissive, emissive, 4 * sizeof(float));
+	cubeMesh.mat.shininess = shininess;
+	cubeMesh.mat.texCount = texcount;
+
+	std::vector<MyVec3Rotation> rotations = {};
+
+	cube = MyObject(cubeMesh, initialPositionTemp, initialScaleTemp, rotations);
+	cube.textureOption = MyTextureOption::CubeReflector;
+}
+
+void MyCubeReflector::render(VSShaderLib& shader) {
+	cube.render(shader);
 }

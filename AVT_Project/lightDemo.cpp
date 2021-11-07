@@ -63,6 +63,7 @@ VSShaderLib shaderText;  //render bitmap text
 // =================================== RENDER OBJECTS ===================================
 
 MySkyBox skyBox;
+MyCubeReflector cubeReflector;
 
 MyTable table;
 MyRoad road;
@@ -135,6 +136,7 @@ MyGame game = MyGame();
 
 bool fogActivated = false;
 bool flareEffect = false;
+bool bumpMapping = false;
 
 MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
 
@@ -174,9 +176,12 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint model_uniformId;
+GLint view_uniformId;
 GLint normal_uniformId;
 
+GLint reflect_perFragment_uniformId;
 GLint fogActivated_uniformId;
+GLint bumpMode_uniformId;
 
 // PointLight UniformID
 GLint lpPos_uniformId;
@@ -193,9 +198,9 @@ GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 
 // Textures UniformID
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_cube_loc;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_cube_loc, texbump_loc0;
 GLint texMode_uniformId;
-GLuint TextureArray[6];
+GLuint TextureArray[8];
 GLuint FlareTextureArray[5];
 
 // Assimp UniformID
@@ -213,6 +218,7 @@ char s[32];
 void initGameObjects() {
 
 	skyBox = MySkyBox(MyVec3{ 0, 0, 0 }, MyVec3{ 500, 500, 500 });
+	cubeReflector = MyCubeReflector(MyVec3{ 0, 0, 0 }, MyVec3{ 15, 15, 15 });
 
 	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
@@ -361,7 +367,7 @@ void changeCameraSize() {
 
 	MyCamera* currentCamera = cameras[activeCamera];
 	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
-	else { ortho(-ORTHO_FRUSTUM_HEIGHT * ratio, ORTHO_FRUSTUM_HEIGHT * ratio, -ORTHO_FRUSTUM_HEIGHT, ORTHO_FRUSTUM_HEIGHT, -20, 20); }
+	else { ortho(-ORTHO_FRUSTUM_HEIGHT * ratio, ORTHO_FRUSTUM_HEIGHT * ratio, -ORTHO_FRUSTUM_HEIGHT, ORTHO_FRUSTUM_HEIGHT, -20, 2000); }
 }
 
 // ------------------------------------------------------------
@@ -571,6 +577,10 @@ void renderScene(void) {
 	glBindTexture(GL_TEXTURE_2D, TextureArray[4]);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[5]);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[6]);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[7]);
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
@@ -578,6 +588,8 @@ void renderScene(void) {
 	glUniform1i(tex_loc3, 3);
 	glUniform1i(tex_loc4, 4);
 	glUniform1i(tex_cube_loc, 5);
+	glUniform1i(tex_loc5, 6);
+	glUniform1i(texbump_loc0, 7);
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
 
@@ -622,6 +634,7 @@ void renderScene(void) {
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	skyBox.render(shader);
+	cubeReflector.render(shader);
 
 	// Non Transparent Objects
 	table.render(shader);
@@ -667,6 +680,7 @@ void renderScene(void) {
 		dealWithLights();
 
 		skyBox.render(shader);
+		cubeReflector.render(shader);
 
 		// Non Transparent Objects
 		table.render(shader);
@@ -858,6 +872,11 @@ void processKeys(unsigned char key, int xx, int yy) {
 			fogActivated = !fogActivated;
 			break;
 
+		case 'B':
+		case 'b':
+			bumpMapping = !bumpMapping;
+			break;
+
 		/*case 'c':
 			printf("Camera Spherical Coordinates (%f, %f, %f)\n", currentCamera->alpha, currentCamera->beta, currentCamera->r);
 			break;
@@ -1022,9 +1041,10 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
+	view_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_View");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 
-
+	reflect_perFragment_uniformId = glGetUniformLocation(shader.getProgramIndex(), "reflect_perFrag");
 	fogActivated_uniformId = glGetUniformLocation(shader.getProgramIndex(), "fogActivated");
 
 	// Pointlight Get UniformID
@@ -1048,7 +1068,11 @@ GLuint setupShaders() {
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
+	tex_loc5 = glGetUniformLocation(shader.getProgramIndex(), "texmap5");
 	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
+	texbump_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmapBump0");
+
+	bumpMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "bumpMode");
 
 	// Assimp Shader UniformID
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
@@ -1096,7 +1120,7 @@ int init() {
 		SymbolInformation{"coin", "./materials/coin.png"}
 	});
 
-	glGenTextures(6, TextureArray);
+	glGenTextures(8, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
@@ -1105,6 +1129,8 @@ int init() {
 	//const char* filenames[] = { "./materials/posX.png", "./materials/negX.png", "./materials/posY.png", "./materials/negY.png", "./materials/posZ.png", "./materials/negZ.png" };
 	const char* filenames[] = { "./materials/skyBox/right.png", "./materials/skyBox/left.png", "./materials/skyBox/top.png", "./materials/skyBox/bot.png", "./materials/skyBox/front.png", "./materials/skyBox/back.png" };
 	TextureCubeMap_Loader(TextureArray, filenames, 5);
+	Texture2D_Loader(TextureArray, "./materials/cheerio.jpg", 6);
+	Texture2D_Loader(TextureArray, "./materials/cheerioBumpmap.png", 7);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);

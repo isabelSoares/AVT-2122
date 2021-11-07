@@ -453,7 +453,7 @@ MyRoad::MyRoad(MyVec3 positionTemp, float width, float sideDistance, float sizeS
 				cheerioPositionVariation = MyVec3{ - sideDistance / 2 + correctedMarginFactor * width / 2, (outterCheerioRadiusTemp - innerCheerioRadiusTemp) * 2, currentPosition - (sizeStraight / 2 + O_PI * (sideDistance + width) + sizeStraight) - sizeStraight / 2};
 			}
 
-			MyVec3 cheerioPosition = position + cheerioPositionVariation;
+			MyVec3 cheerioPosition = position + cheerioPositionVariation + MyVec3{0, -0.15, 0};
 			MyCheerio cheerio = MyCheerio(cheerioPosition, innerCheerioRadiusTemp, outterCheerioRadiusTemp);
 
 			cheerios.push_back(cheerio);

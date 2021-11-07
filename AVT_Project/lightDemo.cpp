@@ -151,7 +151,7 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 15;
+const int NUMBER_ORANGES = 0;
 const int NUMBER_PARTICLES = 2;
 const int TIME_PARTICLES = 200;
 const int CHECKER_LENGTH = 8;
@@ -182,6 +182,7 @@ GLint normal_uniformId;
 GLint reflect_perFragment_uniformId;
 GLint fogActivated_uniformId;
 GLint bumpMode_uniformId;
+GLint shadowMode_uniformId;
 
 // PointLight UniformID
 GLint lpPos_uniformId;
@@ -220,7 +221,7 @@ void initGameObjects() {
 	skyBox = MySkyBox(MyVec3{ 0, 0, 0 }, MyVec3{ 500, 500, 500 });
 	cubeReflector = MyCubeReflector(MyVec3{ 0, 0, 0 }, MyVec3{ 15, 15, 15 });
 
-	table = MyTable(MyVec3{ 0, -0.05, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
+	table = MyTable(MyVec3{ 0, -0.1, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
 	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
@@ -317,53 +318,50 @@ void refresh(int value)
 	glutTimerFunc(1000 / FPS, refresh, 0);
 }
 
+void drawStencilBackMirror() {
+
+	pushMatrix(PROJECTION);
+	pushMatrix(VIEW);
+	pushMatrix(MODEL);
+
+	/* create a diamond shaped stencil area */
+	loadIdentity(PROJECTION);
+	loadIdentity(VIEW);
+
+	int m_viewport[4];
+	glGetIntegerv(GL_VIEWPORT, m_viewport);
+
+	ortho(-2, 2, -2, 2, -1, 1);
+
+	glUseProgram(shader.getProgramIndex());
+
+	translate(MODEL, 0, 1.74, 0);
+	scale(MODEL, 0.831 * (1.887906f / ratio), 0.5, 1);
+	translate(MODEL, 0.045, 0, 0);
+	// send matrices to OGL
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	//glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	computeNormalMatrix3x3();
+	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	glStencilFunc(GL_NEVER, 0x1, 0x1);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+
+	MyMesh mesh = createCube();
+
+	glBindVertexArray(mesh.vao);
+	glDrawElements(mesh.type, mesh.numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+
+	popMatrix(PROJECTION);
+	popMatrix(VIEW);
+	popMatrix(MODEL);
+}
+
 void changeCameraSize() {
 
 	loadIdentity(PROJECTION);
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glClearStencil(0x0);
-
-	// Has Stencil?
-	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) {
-
-		pushMatrix(PROJECTION);
-		pushMatrix(VIEW);
-		pushMatrix(MODEL);
-
-		/* create a diamond shaped stencil area */
-		loadIdentity(PROJECTION);
-		loadIdentity(VIEW);
-
-		int m_viewport[4];
-		glGetIntegerv(GL_VIEWPORT, m_viewport);
-
-		ortho(-2, 2, -2, 2, -1, 1);
-
-		glUseProgram(shader.getProgramIndex());
-
-		translate(MODEL, 0, 1.74, 0);
-		scale(MODEL, 0.831 * (1.887906f / ratio), 0.5, 1);
-		translate(MODEL, 0.045, 0, 0);
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		//glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		glStencilFunc(GL_NEVER, 0x1, 0x1);
-		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
-
-		MyMesh mesh = createCube();
-
-		glBindVertexArray(mesh.vao);
-		glDrawElements(mesh.type, mesh.numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(PROJECTION);
-		popMatrix(VIEW);
-		popMatrix(MODEL);
-	}
 
 	MyCamera* currentCamera = cameras[activeCamera];
 	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
@@ -543,6 +541,38 @@ void checkCollisions() {
 
 }
 
+void drawObjects() {
+
+	MyCamera* currentCamera = cameras[activeCamera];
+
+	skyBox.render(shader);
+	cubeReflector.render(shader);
+
+	// Non Transparent Objects
+	road.render(shader);
+	for (MyOrange& orange : oranges) { orange.render(shader); }
+	for (MyCandle& candle : candles) { candle.render(shader); }
+	car.render(shader);
+
+	// Transparent with non transparent behavior
+	for (MyBillboardTree& tree : trees) {
+		tree.update(currentCamera->position);
+		tree.render(shader);
+	}
+	// Trasparent Objects
+	glEnable(GL_BLEND);
+	glDepthMask(GL_FALSE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (MyPacketButter& butter : butters) { butter.render(shader); }
+	for (MyWaterParticle& particle : particles) {
+
+		particle.update(currentCamera->position);
+		particle.render(shader);
+	}
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+}
+
 // ------------------------------------------------------------
 // ------------------------------------------------------------
 //
@@ -630,40 +660,69 @@ void renderScene(void) {
 
 	// ====================================================================================
 
+
+	particles.erase(std::remove_if(particles.begin(), particles.end(), [](MyWaterParticle i) { return i.isDead(); }), particles.end());
+	generateNeededParticles();
+
+	table.render(shader);
+
+	// ====================================== SHADOWS ======================================
+
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glEnable(GL_STENCIL_TEST);
+
+	glStencilFunc(GL_NEVER, 0x1, 0x1);
+	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+	// Fill stencil buffer with Ground shape; never rendered into color buffer
+	table.render(shader);
+
+	glEnable(GL_BLEND);
+
+	// Render the Shadows
+	glUniform1i(shadowMode_uniformId, true);
+	float lightPosConverted[4] = { pointlights[3].positionVec.x, pointlights[3].positionVec.y, pointlights[3].positionVec.z, 1.0 };
+	float mat[16];
+	GLfloat plano_chao[4] = { 0,1,0,0 };
+	shadow_matrix(mat, plano_chao, lightPosConverted);
+
+	glDisable(GL_DEPTH_TEST); //To force the shadow geometry to be rendered even if behind the floor
+
+	//Dark the color stored in color buffer
+	glBlendFunc(GL_DST_COLOR, GL_ZERO);
+	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+
+	pushMatrix(MODEL);
+	multMatrix(MODEL, mat);
+	drawObjects();
+	popMatrix(MODEL);
+
+	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glUniform1i(shadowMode_uniformId, false);
+
+	// ====================================== ======= ======================================
+	
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glEnable(GL_STENCIL_TEST);
+	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) drawStencilBackMirror();
+
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	skyBox.render(shader);
-	cubeReflector.render(shader);
+	//table.render(shader);
+	drawObjects();
 
-	// Non Transparent Objects
-	table.render(shader);
-	road.render(shader);
-	for (MyOrange& orange : oranges) { orange.render(shader); }
-	for (MyCandle& candle : candles) { candle.render(shader); }
-	car.render(shader);
-
-	// Transparent with non transparent behavior
-	for (MyBillboardTree& tree : trees) {
-		tree.update(currentCamera->position);
-		tree.render(shader);
-	}
-	// Trasparent Objects
-	glEnable(GL_BLEND);
-	glDepthMask(GL_FALSE);
-	for (MyPacketButter& butter : butters) { butter.render(shader); }
-	particles.erase(std::remove_if(particles.begin(), particles.end(), [](MyWaterParticle i) { return i.isDead(); }), particles.end());
-	generateNeededParticles();
-	for (MyWaterParticle& particle : particles) {
-
-		particle.update(currentCamera->position);
-		particle.render(shader);
-	}
-	glDepthMask(GL_TRUE);
-	glDisable(GL_BLEND);
+	glDisable(GL_STENCIL_TEST);
 
 	// Render back mirror
 	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) {
+
+		glEnable(GL_STENCIL_TEST);
+
+		drawStencilBackMirror();
 
 		pushMatrix(VIEW);
 		pushMatrix(MODEL);
@@ -679,35 +738,15 @@ void renderScene(void) {
 
 		dealWithLights();
 
-		skyBox.render(shader);
-		cubeReflector.render(shader);
-
-		// Non Transparent Objects
 		table.render(shader);
-		road.render(shader);
-		for (MyOrange& orange : oranges) { orange.render(shader); }
-		for (MyCandle& candle : candles) { candle.render(shader); }
-		car.render(shader);
-
-		// Transparent with non transparent behavior
-		for (MyBillboardTree& tree : trees) {
-			tree.update(currentCamera->position);
-			tree.render(shader);
-		}
-		// Trasparent Objects
-		glEnable(GL_BLEND);
-		glDepthMask(GL_FALSE);
-		for (MyPacketButter& butter : butters) { butter.render(shader); }
-		for (MyWaterParticle& particle : particles) {
-			particle.update(currentCamera->position);
-			particle.render(shader);
-		}
-		glDepthMask(GL_TRUE);
-		glDisable(GL_BLEND);
+		drawObjects();
 
 		popMatrix(VIEW);
 		popMatrix(MODEL);
-	}
+
+		glDisable(GL_STENCIL_TEST);
+
+	} else glClear(GL_STENCIL_BUFFER_BIT);
 
 	if (flareEffect) {
 		pointlights[3].computeEyeStuff();
@@ -1073,6 +1112,9 @@ GLuint setupShaders() {
 	texbump_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmapBump0");
 
 	bumpMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "bumpMode");
+	shadowMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "shadowMode");
+
+	glUniform1i(shadowMode_uniformId, false);
 
 	// Assimp Shader UniformID
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");

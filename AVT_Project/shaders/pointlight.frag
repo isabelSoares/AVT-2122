@@ -24,6 +24,8 @@ uniform int texMode;
 uniform int reflect_perFrag;
 uniform int bumpMode;
 
+uniform bool shadowMode;
+
 uniform int fogActivated;
 
 // Pointlights
@@ -256,6 +258,8 @@ void main() {
 	} else if (mat.texCount == 0) colorOut = max(finalLightsColor / numberOfLights, diff * 0.1);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
+
+	if (shadowMode) colorOut = vec4(0.8, 0.8, 0.8, 1.0);
 
 	if (fogActivated == 1) {
 		float dist = length(DataIn.pos);

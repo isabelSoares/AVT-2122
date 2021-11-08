@@ -399,8 +399,11 @@ MyTable::MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp) {
 	tableTop.textureOption = MyTextureOption::Multitexturing;
 }
 
-void MyTable::render(VSShaderLib& shader) {
+void MyTable::render(VSShaderLib& shader, bool reflectionPart) {
+
+	if (reflectionPart) tableTop.mesh.mat.diffuse[3] = 0.3f;
 	tableTop.render(shader);
+	if (reflectionPart) tableTop.mesh.mat.diffuse[3] = 1.0f;
 }
 
 MyRoad::MyRoad() {}
@@ -878,7 +881,7 @@ MyCandle::MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPo
 	candle.textureOption = MyTextureOption::Candle;
 	candle.bumpmapOption = MyBumpMapOption::Candle;
 
-	light->positionVec = MyVec3{position.x, position.y + height + 0.5f, position.z};
+	light->positionVec = MyVec3{position.x, position.y + height + radius, position.z};
 }
 
 MyVec3 MyCandle::getPosition() {
@@ -1060,4 +1063,32 @@ MyCubeReflector::MyCubeReflector(MyVec3 initialPositionTemp, MyVec3 initialScale
 
 void MyCubeReflector::render(VSShaderLib& shader) {
 	cube.render(shader);
+}
+
+
+MyPuddle::MyPuddle() {}
+MyPuddle::MyPuddle(MyVec3 initialPositionTemp, float heightTemp, float radiusTemp) {
+
+	MyMesh puddleMesh = createCylinder(heightTemp, radiusTemp, 25);
+
+	float amb[] = { 1.0f, 0.55f, 0.0f, 1.0f };
+	float diff[] = { 0.8f, 0.40f, 0.0f, 1.0f };
+	float spec[] = { 0.3f, 0.15f, 0.0f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 50.0f;
+	int texcount = 0;
+
+	memcpy(puddleMesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(puddleMesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(puddleMesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(puddleMesh.mat.emissive, emissive, 4 * sizeof(float));
+	puddleMesh.mat.shininess = shininess;
+	puddleMesh.mat.texCount = texcount;
+
+	std::vector<MyVec3Rotation> rotations = {};
+	puddle = MyObject(puddleMesh, initialPositionTemp, MyVec3{ 1, 1, 1 }, rotations);
+}
+
+void MyPuddle::render(VSShaderLib& shader) {
+	puddle.render(shader);
 }

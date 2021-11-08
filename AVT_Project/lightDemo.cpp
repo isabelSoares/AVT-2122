@@ -65,6 +65,8 @@ VSShaderLib shaderText;  //render bitmap text
 MySkyBox skyBox;
 MyCubeReflector cubeReflector;
 
+MyPuddle puddle;
+
 MyTable table;
 MyRoad road;
 MyCar car;
@@ -138,6 +140,8 @@ bool fogActivated = false;
 bool flareEffect = false;
 bool bumpMapping = false;
 
+bool reflectionActivated = false;
+
 MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
 
 const int MAIN_POINTLIGHT = 3;
@@ -151,7 +155,7 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 7;
+const int NUMBER_ORANGES = 0;
 const int DISTANCE_CHEERIOS = 10.0;
 //const int DISTANCE_CHEERIOS = 3.5;
 const int NUMBER_PARTICLES = 2;
@@ -222,7 +226,9 @@ char s[32];
 void initGameObjects() {
 
 	skyBox = MySkyBox(MyVec3{ 0, 0, 0 }, MyVec3{ 500, 500, 500 });
-	cubeReflector = MyCubeReflector(MyVec3{ 0, 3.75, 0 }, MyVec3{ 15, 7.5, 15 });
+	cubeReflector = MyCubeReflector(MyVec3{ 0, 13.75, 0 }, MyVec3{ 15, 7.5, 15 });
+
+	puddle = MyPuddle(MyVec3{ 0, -0.1, 0 }, 0.2, 15);
 
 	table = MyTable(MyVec3{ 0, -0.1, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
 	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, DISTANCE_CHEERIOS, 0.4, 0.8);
@@ -238,9 +244,9 @@ void initGameObjects() {
 				MyPacketButter(MyVec3{ -0.25 * TABLE_SIZE - 5, 0.6, 0.3 * TABLE_SIZE - 30 }, MyVec3{3.0f, 1.2f, 1.5f}),
 				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}),
 				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, -0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}) };
-	candles = { MyCandle(MyVec3{-0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[1]),
-				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 20, -0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
-				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5]) };
+	candles = { MyCandle(MyVec3{-0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[1]),
+				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 20, 4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.6, &pointlights[2]),
+				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[5]) };
 	
 	float square_size = TABLE_SIZE / CHECKER_LENGTH;
 	trees = {};
@@ -395,7 +401,9 @@ void changeSize(int w, int h) {
 // Dealing with lights
 //
 
-void dealWithLights() {
+void dealWithLights(bool reflection) {
+
+	float reflectionFactor = reflection ? -1.0f : 1.0f;
 
 	// Pointlights Load Info
 	float* resp_pos = (float*)malloc(NUMBER_POINTLIGHTS * 4 * sizeof(float));
@@ -406,7 +414,7 @@ void dealWithLights() {
 		currentPointlight->computeEyeStuff();
 
 		MyVec3 lightPos = currentPointlight->getPosition();
-		float lightOnePos[4] = { lightPos.x, lightPos.y, lightPos.z, 1.0 };
+		float lightOnePos[4] = { lightPos.x, reflectionFactor * lightPos.y, lightPos.z, 1.0 };
 		multMatrixPoint(VIEW, lightOnePos, resp_pos + lightIndex * 4);
 
 		int state = currentPointlight->getState();
@@ -423,7 +431,7 @@ void dealWithLights() {
 		MyDirectionalLight * currentDirectionalLight = &directionalLights[lightIndex];
 
 		MyVec3 lightDirection = currentDirectionalLight->getDirection();
-		float lightOneDirection[4] = { lightDirection.x, lightDirection.y, lightDirection.z, 0.0 };
+		float lightOneDirection[4] = { lightDirection.x, reflectionFactor * lightDirection.y, lightDirection.z, 0.0 };
 		multMatrixPoint(VIEW, lightOneDirection, resd_dir + lightIndex * 4);
 
 		int state = currentDirectionalLight->getState();
@@ -443,11 +451,11 @@ void dealWithLights() {
 		currentSpotlight->computeEyeStuff();
 
 		MyVec3 lightPos = currentSpotlight->getPosition();
-		float lightOnePos[4] = { lightPos.x, lightPos.y, lightPos.z, 1.0 };
+		float lightOnePos[4] = { lightPos.x, reflectionFactor * lightPos.y, lightPos.z, 1.0 };
 		multMatrixPoint(VIEW, lightOnePos, ress_pos + lightIndex * 4);
 
 		MyVec3 lightDirection = currentSpotlight->getDirection();
-		float lightOneDirection[4] = { lightDirection.x, lightDirection.y, lightDirection.z, 0.0 };
+		float lightOneDirection[4] = { lightDirection.x, reflectionFactor * lightDirection.y, lightDirection.z, 0.0 };
 		multMatrixPoint(VIEW, lightOneDirection, ress_dir + lightIndex * 4);
 
 		float angle = currentSpotlight->getConeAngle();
@@ -633,8 +641,6 @@ void renderScene(void) {
 	glUniform1i(fogActivated_uniformId, fogActivated);
 	glUniform1i(bumpActivated_uniformId, bumpMapping);
 
-	dealWithLights();
-
 	if (game.state == MyGameState::Restart) {
 
 		initGameObjects();
@@ -675,7 +681,43 @@ void renderScene(void) {
 	particles.erase(std::remove_if(particles.begin(), particles.end(), [](MyWaterParticle i) { return i.isDead(); }), particles.end());
 	generateNeededParticles();
 
-	table.render(shader);
+	// ====================================== REFLECTIONS ======================================
+
+	if (reflectionActivated && currentCamera->position.y >= 0) {
+
+		glEnable(GL_STENCIL_TEST);        // Escrever 1 no stencil buffer onde se for desenhar a reflexão e a sombra
+		glStencilFunc(GL_NEVER, 0x1, 0x1);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+		// Fill stencil buffer with Ground shape; never rendered into color buffer
+		puddle.render(shader);
+
+		glUniform1i(shadowMode_uniformId, 0);  //iluminação phong
+
+		// Desenhar apenas onde o stencil buffer esta a 1
+		glStencilFunc(GL_EQUAL, 0x1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		dealWithLights(true);
+
+		pushMatrix(MODEL);
+		scale(MODEL, 1.0f, -1.0f, 1.0f);
+		glCullFace(GL_FRONT);
+		drawObjects(false);
+		glCullFace(GL_BACK);
+		popMatrix(MODEL);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
+	dealWithLights(false);
+
+	// Rendering table for: (1) blend with reflections, (2) project shadows after
+	table.render(shader, true);
+	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
+	table.render(shader, false);
+	glClear(GL_STENCIL_BUFFER_BIT);
 
 	// ====================================== SHADOWS ======================================
 
@@ -688,7 +730,7 @@ void renderScene(void) {
 		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
 		// Fill stencil buffer with Ground shape; never rendered into color buffer
-		table.render(shader);
+		table.render(shader, false);
 
 		glEnable(GL_BLEND);
 
@@ -727,7 +769,7 @@ void renderScene(void) {
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	table.render(shader);
+	//table.render(shader);
 	drawObjects(false);
 
 	glDisable(GL_STENCIL_TEST);
@@ -751,9 +793,9 @@ void renderScene(void) {
 		MyCamera* backCamera = &carBehindCamera;
 		lookAt(backCamera->position.x, backCamera->position.y, backCamera->position.z, backCamera->lookAtPosition.x, backCamera->lookAtPosition.y, backCamera->lookAtPosition.z, 0, 1, 0);
 
-		dealWithLights();
+		dealWithLights(false);
 
-		table.render(shader);
+		table.render(shader, false);
 		drawObjects(false);
 
 		popMatrix(VIEW);
@@ -929,6 +971,11 @@ void processKeys(unsigned char key, int xx, int yy) {
 		case 'B':
 		case 'b':
 			bumpMapping = !bumpMapping;
+			break;
+
+		case 'M':
+		case 'm':
+			reflectionActivated = !reflectionActivated;
 			break;
 
 		/*case 'c':

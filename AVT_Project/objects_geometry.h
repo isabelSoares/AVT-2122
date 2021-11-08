@@ -56,7 +56,7 @@ public:
 	MyTable();
 	MyTable(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
 
-	void render(VSShaderLib& shader);
+	void render(VSShaderLib& shader, bool reflectionPart);
 };
 
 class MyCheerio {
@@ -304,6 +304,19 @@ public:
 
 	MyCubeReflector();
 	MyCubeReflector(MyVec3 initialPositionTemp, MyVec3 initialScaleTemp);
+
+	void render(VSShaderLib& shader);
+};
+
+class MyPuddle {
+public:
+	// ============ Cube Reflector Objects ===============
+	MyObject puddle;
+	// ============ Cube Reflector Attributes ============
+	// ============ Cube Reflector Attributes ============
+
+	MyPuddle();
+	MyPuddle(MyVec3 initialPositionTemp, float heightTemp, float radiusTemp);
 
 	void render(VSShaderLib& shader);
 };

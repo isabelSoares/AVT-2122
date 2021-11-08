@@ -140,7 +140,7 @@ bool bumpMapping = false;
 
 MyVec3 START_POSITION = MyVec3{ 0, 0, 0 };
 
-const int FLARE_POINTLIGHT = 3;
+const int MAIN_POINTLIGHT = 3;
 std::vector<char*> flareTextureNames =  {"crcl", "flar", "hxgn", "ring", "sun"};
 
 int timesToGenerateParticles = 0;
@@ -151,7 +151,9 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 0;
+const int NUMBER_ORANGES = 7;
+const int DISTANCE_CHEERIOS = 10.0;
+//const int DISTANCE_CHEERIOS = 3.5;
 const int NUMBER_PARTICLES = 2;
 const int TIME_PARTICLES = 200;
 const int CHECKER_LENGTH = 8;
@@ -181,6 +183,7 @@ GLint normal_uniformId;
 
 GLint reflect_perFragment_uniformId;
 GLint fogActivated_uniformId;
+GLint bumpActivated_uniformId;
 GLint bumpMode_uniformId;
 GLint shadowMode_uniformId;
 
@@ -219,10 +222,10 @@ char s[32];
 void initGameObjects() {
 
 	skyBox = MySkyBox(MyVec3{ 0, 0, 0 }, MyVec3{ 500, 500, 500 });
-	cubeReflector = MyCubeReflector(MyVec3{ 0, 0, 0 }, MyVec3{ 15, 15, 15 });
+	cubeReflector = MyCubeReflector(MyVec3{ 0, 3.75, 0 }, MyVec3{ 15, 7.5, 15 });
 
 	table = MyTable(MyVec3{ 0, -0.1, 0 }, MyVec3{ TABLE_SIZE, 0.2, TABLE_SIZE });
-	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, 3.5, 0.4, 0.8);
+	road = MyRoad(MyVec3{ 0, -0.2, 0 }, 20, 0.5 * TABLE_SIZE, 0.33 * TABLE_SIZE, TABLE_SIZE, TABLE_SIZE, DISTANCE_CHEERIOS, 0.4, 0.8);
 	std::vector<MySpotlight*> carSpotlights = { &spotlights[0], &spotlights[1] };
 	car = MyCar(MyVec3{ 0, 0, 0 }, carSpotlights);
 	oranges = {};
@@ -236,12 +239,12 @@ void initGameObjects() {
 				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}),
 				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, -0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}) };
 	candles = { MyCandle(MyVec3{-0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[1]),
-				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 2, -0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
+				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 20, -0.4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.4, &pointlights[2]),
 				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.4, &pointlights[5]) };
 	
 	float square_size = TABLE_SIZE / CHECKER_LENGTH;
 	trees = {};
-	std::vector<int> blackList = {3, 5, 10, 12, 14, 17, 21, 26, 30, 33, 37, 42, 46, 49, 51, 53, 58, 60};
+	std::vector<int> blackList = {3, 5, 10, 12, 14, 17, 19, 21, 26, 28, 30, 33, 35, 37, 42, 44, 46, 49, 51, 53, 58, 60};
 	for (int i = 1; i < CHECKER_LENGTH * CHECKER_LENGTH; i++) {
 
 		if ((i / CHECKER_LENGTH) % 2 == (i % CHECKER_LENGTH) % 2) continue;
@@ -541,7 +544,7 @@ void checkCollisions() {
 
 }
 
-void drawObjects() {
+void drawObjects(bool shadowMode) {
 
 	MyCamera* currentCamera = cameras[activeCamera];
 
@@ -560,17 +563,23 @@ void drawObjects() {
 		tree.render(shader);
 	}
 	// Trasparent Objects
-	glEnable(GL_BLEND);
-	glDepthMask(GL_FALSE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if (!shadowMode) {
+		glEnable(GL_BLEND);
+		glDepthMask(GL_FALSE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
+
 	for (MyPacketButter& butter : butters) { butter.render(shader); }
 	for (MyWaterParticle& particle : particles) {
 
 		particle.update(currentCamera->position);
 		particle.render(shader);
 	}
-	glDepthMask(GL_TRUE);
-	glDisable(GL_BLEND);
+
+	if (!shadowMode) {
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
+	}
 }
 
 // ------------------------------------------------------------
@@ -622,6 +631,7 @@ void renderScene(void) {
 	glUniform1i(texbump_loc0, 7);
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
+	glUniform1i(bumpActivated_uniformId, bumpMapping);
 
 	dealWithLights();
 
@@ -632,11 +642,12 @@ void renderScene(void) {
 	}
 
 	// ================================ Check Position Car ================================
-
+	
 	MyVec3 carPosition = car.getPosition();
 	if (abs(carPosition.x) > TABLE_SIZE / 2 || abs(carPosition.z) > TABLE_SIZE / 2) {
 
 		car.position = START_POSITION;
+		car.velocity = 0.0f;
 		car.direction = MyVec3{ 0, 0, -1 };
 
 		// Player loses 1 life
@@ -668,40 +679,44 @@ void renderScene(void) {
 
 	// ====================================== SHADOWS ======================================
 
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glEnable(GL_STENCIL_TEST);
+	if (pointlights[MAIN_POINTLIGHT].state == MyPointlightState::On && currentCamera->position.y >= 0) {
 
-	glStencilFunc(GL_NEVER, 0x1, 0x1);
-	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_STENCIL_TEST);
 
-	// Fill stencil buffer with Ground shape; never rendered into color buffer
-	table.render(shader);
+		glStencilFunc(GL_NEVER, 0x1, 0x1);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
 
-	glEnable(GL_BLEND);
+		// Fill stencil buffer with Ground shape; never rendered into color buffer
+		table.render(shader);
 
-	// Render the Shadows
-	glUniform1i(shadowMode_uniformId, true);
-	float lightPosConverted[4] = { pointlights[3].positionVec.x, pointlights[3].positionVec.y, pointlights[3].positionVec.z, 1.0 };
-	float mat[16];
-	GLfloat plano_chao[4] = { 0,1,0,0 };
-	shadow_matrix(mat, plano_chao, lightPosConverted);
+		glEnable(GL_BLEND);
 
-	glDisable(GL_DEPTH_TEST); //To force the shadow geometry to be rendered even if behind the floor
+		// Render the Shadows
+		glUniform1i(shadowMode_uniformId, true);
+		float lightPosConverted[4] = { pointlights[MAIN_POINTLIGHT].positionVec.x, pointlights[MAIN_POINTLIGHT].positionVec.y, pointlights[MAIN_POINTLIGHT].positionVec.z, 1.0 };
+		float mat[16];
+		GLfloat plano_chao[4] = { 0,1,0,0 };
+		shadow_matrix(mat, plano_chao, lightPosConverted);
 
-	//Dark the color stored in color buffer
-	glBlendFunc(GL_DST_COLOR, GL_ZERO);
-	glStencilFunc(GL_EQUAL, 0x1, 0x1);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+		glDisable(GL_DEPTH_TEST); //To force the shadow geometry to be rendered even if behind the floor
 
-	pushMatrix(MODEL);
-	multMatrix(MODEL, mat);
-	drawObjects();
-	popMatrix(MODEL);
+		//Dark the color stored in color buffer
+		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		glStencilFunc(GL_EQUAL, 0x1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
 
-	glDisable(GL_STENCIL_TEST);
-	glDisable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
-	glUniform1i(shadowMode_uniformId, false);
+		pushMatrix(MODEL);
+		multMatrix(MODEL, mat);
+		drawObjects(true);
+		popMatrix(MODEL);
+
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
+		glUniform1i(shadowMode_uniformId, false);
+
+	}
 
 	// ====================================== ======= ======================================
 	
@@ -712,8 +727,8 @@ void renderScene(void) {
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	//table.render(shader);
-	drawObjects();
+	table.render(shader);
+	drawObjects(false);
 
 	glDisable(GL_STENCIL_TEST);
 
@@ -739,7 +754,7 @@ void renderScene(void) {
 		dealWithLights();
 
 		table.render(shader);
-		drawObjects();
+		drawObjects(false);
 
 		popMatrix(VIEW);
 		popMatrix(MODEL);
@@ -749,8 +764,8 @@ void renderScene(void) {
 	} else glClear(GL_STENCIL_BUFFER_BIT);
 
 	if (flareEffect) {
-		pointlights[3].computeEyeStuff();
-		MyVec3 lightPos = pointlights[3].getPosition();
+		pointlights[MAIN_POINTLIGHT].computeEyeStuff();
+		MyVec3 lightPos = pointlights[MAIN_POINTLIGHT].getPosition();
 		renderWholeFlare(shader, lightPos);
 	}
 
@@ -775,14 +790,14 @@ void renderScene(void) {
 
 	// Update Car Inside Camera
 	carInsideCamera.translation.x = carPosition.x - 0.25f * car.direction.x;
-	carInsideCamera.translation.y = carPosition.y + 1.25f;
+	carInsideCamera.translation.y = carPosition.y + 1.221f;
 	carInsideCamera.translation.z = carPosition.z - 0.25f * car.direction.z;
 	carInsideCamera.lookAtPosition = carPosition + car.direction * MyVec3{ 10, 10, 10 } + MyVec3{ 0, 1, 0 };
 	carInsideCamera.rotationDegrees = -(car.getDirectionDegrees() - 270.0f);
 
 	// Update Car Behind Camera
 	carBehindCamera.translation.x = carPosition.x - 0.05f * car.direction.x;
-	carBehindCamera.translation.y = carPosition.y + 1.21f;
+	carBehindCamera.translation.y = carPosition.y + 1.19f;
 	carBehindCamera.translation.z = carPosition.z - 0.05f * car.direction.z;
 	carBehindCamera.lookAtPosition = carPosition - car.direction * MyVec3{ 10, 0, 10 } + MyVec3{ 0, -2.9, 0 };
 	carBehindCamera.rotationDegrees = -(car.getDirectionDegrees() - 90.0f);
@@ -868,7 +883,7 @@ void processKeys(unsigned char key, int xx, int yy) {
 				if (pointlights[lightIndex].state == MyPointlightState::On) pointlights[lightIndex].turnOff();
 				else pointlights[lightIndex].turnOn();
 
-				if (lightIndex == FLARE_POINTLIGHT && pointlights[lightIndex].state == MyPointlightState::Off) flareEffect = false;
+				if (lightIndex == MAIN_POINTLIGHT && pointlights[lightIndex].state == MyPointlightState::Off) flareEffect = false;
 			}
 
 			break;
@@ -883,7 +898,7 @@ void processKeys(unsigned char key, int xx, int yy) {
 		case 'L':
 		case 'l':
 			if (flareEffect) flareEffect = false;
-			else if (pointlights[FLARE_POINTLIGHT].state == MyPointlightState::On) flareEffect = true;
+			else if (pointlights[MAIN_POINTLIGHT].state == MyPointlightState::On) flareEffect = true;
 			break;
 
 		// ================= GAME STUFF =================
@@ -1085,6 +1100,7 @@ GLuint setupShaders() {
 
 	reflect_perFragment_uniformId = glGetUniformLocation(shader.getProgramIndex(), "reflect_perFrag");
 	fogActivated_uniformId = glGetUniformLocation(shader.getProgramIndex(), "fogActivated");
+	bumpActivated_uniformId = glGetUniformLocation(shader.getProgramIndex(), "bumpActivated");
 
 	// Pointlight Get UniformID
 	lpPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "lp_positions");
@@ -1171,8 +1187,8 @@ int init() {
 	//const char* filenames[] = { "./materials/posX.png", "./materials/negX.png", "./materials/posY.png", "./materials/negY.png", "./materials/posZ.png", "./materials/negZ.png" };
 	const char* filenames[] = { "./materials/skyBox/right.png", "./materials/skyBox/left.png", "./materials/skyBox/top.png", "./materials/skyBox/bot.png", "./materials/skyBox/front.png", "./materials/skyBox/back.png" };
 	TextureCubeMap_Loader(TextureArray, filenames, 5);
-	Texture2D_Loader(TextureArray, "./materials/cheerio.jpg", 6);
-	Texture2D_Loader(TextureArray, "./materials/cheerioBumpmap.png", 7);
+	Texture2D_Loader(TextureArray, "./materials/candle.jpg", 6);
+	Texture2D_Loader(TextureArray, "./materials/candleBumpmap.jpg", 7);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);

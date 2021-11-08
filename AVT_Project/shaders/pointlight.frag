@@ -27,6 +27,7 @@ uniform int bumpMode;
 uniform bool shadowMode;
 
 uniform int fogActivated;
+uniform bool bumpActivated;
 
 // Pointlights
 uniform int lp_states[6];
@@ -93,8 +94,7 @@ void main() {
 	vec3 e = normalize(DataIn.eye);
 
 	if (normalMap) n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);
-
-	if (bumpMode == 1) n = normalize(2.0 * texture(texmapBump0, DataIn.tex_coord).rgb - 1.0);
+	else if (bumpActivated && bumpMode == 1) n = normalize(2.0 * texture(texmapBump0, DataIn.tex_coord).rgb - 1.0);
 
 	vec4 texel0, texel1, texel2, texel3, texel4, cube_texel, texel5;
 	
@@ -233,7 +233,6 @@ void main() {
 	} else if (texMode == 8) {
 
 		colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
-		return;
 
 	} else if (texMode == 9) {
 
@@ -253,16 +252,19 @@ void main() {
 
 	} else if (texMode == 10) {
 
-		colorOut = max(finalLightsColor / numberOfLights, 0.15 * texel5 );
+		colorOut = max(finalLightsColor * 1.5 / numberOfLights, 0.15 * texel5 );
 	
 	} else if (mat.texCount == 0) colorOut = max(finalLightsColor / numberOfLights, diff * 0.1);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
 
-	if (shadowMode) colorOut = vec4(0.8, 0.8, 0.8, 1.0);
+	if (shadowMode) {
+		colorOut = vec4(0.8, 0.8, 0.8, 1.0);
+		if (fogActivated == 1) colorOut = vec4(0.95, 0.0, 0.00, 1.0);
+	}
 
 	if (fogActivated == 1) {
 		float dist = length(DataIn.pos);
-		colorOut = applyFog(vec3(colorOut), dist, colorOut.a);
+		colorOut = applyFog(vec3(colorOut), dist * 0.5, colorOut.a);
 	}
 }

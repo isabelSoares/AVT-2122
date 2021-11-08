@@ -12,6 +12,8 @@ uniform int texMode;
 uniform int reflect_perFrag;
 uniform int bumpMode;
 
+uniform bool bumpActivated;
+
 // Pointlights
 uniform vec4 lp_positions[6];
 
@@ -62,9 +64,11 @@ void main () {
 	vec3 t, b;
 	vec3 aux;
 
-	if(normalMap || bumpMode != 0)  {
+	if (normalMap || (bumpActivated && bumpMode != 0))  {
 		t = normalize(m_normal * tangent.xyz);
-		b = normalize(m_normal * bitangent.xyz);
+
+		if (normalMap) b = normalize(m_normal * bitangent.xyz);
+		else b = tangent.w * cross(DataOut.normal,t);
 
 		aux.x = dot(DataOut.eye, t);
 		aux.y = dot(DataOut.eye, b);
@@ -78,7 +82,7 @@ void main () {
 	for (int lightIndex = 0 ; lightIndex < lp_positions.length() ; lightIndex++ ) {
 
 		DataOut.lp_directions[lightIndex] = vec3(lp_positions[lightIndex] - pos);
-		if (normalMap) {
+		if (normalMap || (bumpActivated && bumpMode != 0)) {
 			aux.x = dot(DataOut.lp_directions[lightIndex], t);
 			aux.y = dot(DataOut.lp_directions[lightIndex], b);
 			aux.z = dot(DataOut.lp_directions[lightIndex], DataOut.normal);
@@ -91,7 +95,7 @@ void main () {
 		DataOut.ls_directions[lightIndex] = vec3(ls_positions[lightIndex] - pos);
 		DataOut.ls_realDirections[lightIndex] = vec3(ls_directions[lightIndex]);
 
-		if (normalMap) {
+		if (normalMap || (bumpActivated && bumpMode != 0)) {
 			aux.x = dot(DataOut.ls_directions[lightIndex], t);
 			aux.y = dot(DataOut.ls_directions[lightIndex], b);
 			aux.z = dot(DataOut.ls_directions[lightIndex], DataOut.normal);
@@ -108,7 +112,7 @@ void main () {
 	for (int lightIndex = 0 ; lightIndex < ld_directions.length() ; lightIndex++ ) {
 		DataOut.ld_directions[lightIndex] = vec3(- ld_directions[lightIndex]);
 
-		if (normalMap) {
+		if (normalMap || (bumpActivated && bumpMode != 0)) {
 			aux.x = dot(DataOut.ld_directions[lightIndex], t);
 			aux.y = dot(DataOut.ld_directions[lightIndex], b);
 			aux.z = dot(DataOut.ld_directions[lightIndex], DataOut.normal);

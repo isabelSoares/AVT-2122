@@ -10,8 +10,8 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox, CubeReflector, Cheerio };
-enum class MyBumpMapOption { None, Cheerio };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox, CubeReflector, Candle };
+enum class MyBumpMapOption { None, Candle };
 
 class MyObject {
 
@@ -132,7 +132,7 @@ public:
 	// =====
 	MyVec3 OBJ_SCALING_VARIATION = MyVec3{ 0.07, 0.07, 0.07 };
 	MyVec3Rotation OBJ_ROTATION_VARIATION = MyVec3Rotation{ 180, 0, 1, 0 };
-	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{  327.1, 1.0, - 272.8};
+	MyVec3 OBJ_TRANSLATION_VARIATION = MyVec3{  327.1, 0.6, - 272.8};
 	// ============ Car Attributes ============
 	static float MAX_VELOCITY;
 	static float START_ACCELERATION;

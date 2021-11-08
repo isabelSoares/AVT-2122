@@ -39,8 +39,6 @@ extern Assimp::Importer importer;
 extern const aiScene* scene;
 char model_dir[50];
 
-extern bool bumpMapping;
-
 MyObject::MyObject() {}
 MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateTemp) {
 	mesh = meshTemp;
@@ -91,7 +89,7 @@ void MyObject::render(VSShaderLib& shader) {
 	else if (textureOption == MyTextureOption::WaterParticle) glUniform1i(texMode_uniformId, 7);
 	else if (textureOption == MyTextureOption::SkyBox) glUniform1i(texMode_uniformId, 8);
 	else if (textureOption == MyTextureOption::CubeReflector) glUniform1i(texMode_uniformId, 9);
-	else if (textureOption == MyTextureOption::Cheerio) glUniform1i(texMode_uniformId, 10);
+	else if (textureOption == MyTextureOption::Candle) glUniform1i(texMode_uniformId, 10);
 	else glUniform1i(texMode_uniformId, 0);
 
 	glUniform1i(reflect_perFragment_uniformId, reflectedPerFrag ? 1 : 0);
@@ -101,11 +99,9 @@ void MyObject::render(VSShaderLib& shader) {
 	glUniform1i(specularMap_loc, false);
 	glUniform1ui(diffMapCount_loc, 0);
 
-	if (bumpMapping) {
-		if (bumpmapOption == MyBumpMapOption::None) glUniform1i(bumpMode_uniformId, 0);
-		else if (bumpmapOption == MyBumpMapOption::Cheerio) glUniform1i(bumpMode_uniformId, 1);
-
-	} else glUniform1i(bumpMode_uniformId, 0);
+	if (bumpmapOption == MyBumpMapOption::None) glUniform1i(bumpMode_uniformId, 0);
+	else if (bumpmapOption == MyBumpMapOption::Candle) glUniform1i(bumpMode_uniformId, 1);
+	else glUniform1i(bumpMode_uniformId, 0);
 
 	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]);
 	glUniformMatrix4fv(view_uniformId, 1, GL_FALSE, mMatrix[VIEW]);
@@ -192,7 +188,6 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 
 	// save model matrix and apply node transformation
 	pushMatrix(MODEL);
-	loadIdentity(MODEL);
 
 	translate(MODEL, positionVec.x, positionVec.y, positionVec.z);
 	for (MyVec3Rotation rotation : rotateVec) { rotate(MODEL, rotation.angle, rotation.x, rotation.y, rotation.z);  }
@@ -222,6 +217,10 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 
 		GLint texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode");
 		glUniform1i(texMode_uniformId, 0);
+		GLint reflect_perFragment_uniformId = glGetUniformLocation(shader.getProgramIndex(), "reflect_perFrag");
+		glUniform1i(reflect_perFragment_uniformId, 0);
+		GLint bumpMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "bumpMode");
+		glUniform1i(bumpMode_uniformId, 0);
 
 		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
 		
@@ -292,10 +291,11 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 	}
 
 	// draw all children
+	popMatrix(MODEL);
+
 	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
 		render(shader, sc, nd->mChildren[n]);
 	}
-	popMatrix(MODEL);
 }
 
 MyCheerio::MyCheerio() {}
@@ -325,8 +325,6 @@ MyCheerio::MyCheerio(MyVec3 positionTemp, float innerCheerioRadiusTemp, float ou
 	MyVec3 cheerioScale = MyVec3{ 1, 2.3, 1 };
 
 	cheerio = MyObject(cheerioMesh, cheerioPosition, cheerioScale, {});
-	cheerio.textureOption = MyTextureOption::Cheerio;
-	cheerio.bumpmapOption = MyBumpMapOption::Cheerio;
 }
 
 void MyCheerio::render(VSShaderLib& shader) {
@@ -877,6 +875,8 @@ MyCandle::MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPo
 	candleMesh.mat.texCount = texcount;
 
 	candle = MyObject(candleMesh, position + MyVec3{0, height / 2, 0}, scaling, {});
+	candle.textureOption = MyTextureOption::Candle;
+	candle.bumpmapOption = MyBumpMapOption::Candle;
 
 	light->positionVec = MyVec3{position.x, position.y + height + 0.5f, position.z};
 }

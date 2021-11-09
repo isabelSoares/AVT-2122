@@ -481,11 +481,11 @@ void MyRoad::tick(float elapsedTime) {
 
 std::vector<MyCheerio> MyRoad::getCheerios() { return cheerios; }
 
-float MyCar::MAX_VELOCITY = 0.8f;
+float MyCar::MAX_VELOCITY = 0.7f;
 float MyCar::START_ACCELERATION = 0.01f;
 float MyCar::STOP_ACCELERATION = 0.0f;
 float MyCar::FRICTION_COEFICIENT = 0.0055f;
-float MyCar::ANGLE_ROTATION_VELOCITY = 1.0f;
+float MyCar::ANGLE_ROTATION_VELOCITY = 0.9f;
 float MyCar::MAX_WHEEL_ANGLE = 3.0f;
 float MyCar::FRICTION_ROTATION_COEFICIENT = 0.055f;
 
@@ -632,8 +632,8 @@ void MyCar::tick(float elapsedTime) {
 	// Update direction
 	float dot = 1 * direction.x + 0 * direction.z;
 	float det = 1 * direction.z - 0 * direction.x;
-	double angleRadians = atan2(det, dot);
-	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
+	float angleRadians = atan2f(det, dot);
+	float angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
 
 	angleDegrees += rotationWheelAngle * factor;
 
@@ -978,16 +978,21 @@ void MyWaterParticle::render(VSShaderLib& shader) {
 	particle.render(shader);
 }
 
-void MyWaterParticle::update(MyVec3 camPosition) {
+void MyWaterParticle::tick(float elapsedTime) {
+
+	float factor = elapsedTime / (1000.0f / TARGET_FPS);
 
 	// Update Particle Attributes
-	velocity = velocity + accelaration;
-	position = position + velocity;
+	velocity = velocity + accelaration * factor;
+	position = position + velocity * factor;
 
 	particle.positionVec = position + MyVec3{ 0, size / 2, 0 };
-	lifespan = lifespan - fade;
+	lifespan = lifespan - fade * factor;
 
 	particle.mesh.mat.diffuse[3] = lifespan;
+}
+
+void MyWaterParticle::update(MyVec3 camPosition) {
 
 	float camPositionTransformed[3] = { camPosition.x, camPosition.y, camPosition.z };
 	float positionTransformed[3] = { position.x, position.y, position.z };

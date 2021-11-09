@@ -158,7 +158,7 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 0;
+const int NUMBER_ORANGES = 15;
 const int DISTANCE_CHEERIOS = 10.0;
 //const int DISTANCE_CHEERIOS = 3.5;
 const int NUMBER_PARTICLES = 2;
@@ -169,6 +169,8 @@ const int TREES_PER_MINIMUM = 3;
 const int TREES_PER_MAXIMUM = 9;
 
 const float ORTHO_FRUSTUM_HEIGHT = (TABLE_SIZE / 2) * 1.05;
+
+const bool CONSTANT_SPEEDS = true;
 
 const string font_name = "fonts/Acme-Regular.ttf";
 // ======================================================================================
@@ -823,7 +825,7 @@ void renderScene(void) {
 	std::chrono::duration<float, std::ratio<1, 1000>> timeDuration = end - startTime;
 	//std::cout << timeDuration.count() << std::endl;
 	float timeSinceLastRender = 1000.0f / 60.0f;
-	timeSinceLastRender = timeDuration.count();
+	if (CONSTANT_SPEEDS) timeSinceLastRender = timeDuration.count();
 
 	if (game.state == MyGameState::Running) {
 
@@ -831,6 +833,7 @@ void renderScene(void) {
 		road.tick(timeSinceLastRender);
 		for (MyOrange& orange : oranges) { orange.tick(timeSinceLastRender); }
 		for (MyPacketButter& butter : butters) { butter.tick(timeSinceLastRender); }
+		for (MyWaterParticle& particle : particles) { particle.tick(timeSinceLastRender); }
 	}
 
 	checkCollisions();

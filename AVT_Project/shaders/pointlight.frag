@@ -79,7 +79,7 @@ vec4 applyFog( in vec3 rgb, in float distance) {
 
 	float fogAmount = exp( -distance*0.05 );
 	vec3 fogColor = vec3(0.5, 0.6, 0.7);
-	vec3 final_color = mix(fogColor, rgb, min(1.0f, fogAmount * fogFactor));
+	vec3 final_color = mix(fogColor, rgb, max(0.0f, min(1.0f, fogAmount * fogFactor)));
 	return vec4(final_color, 1.0f);
 }
 

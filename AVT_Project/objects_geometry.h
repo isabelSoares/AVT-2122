@@ -274,6 +274,7 @@ public:
 	MyWaterParticle(MyVec3 positionTemp, MyVec3 velocityTemp, MyVec3 accelarationTemp, float fadeTemp, float sizeTemp);
 
 	void render(VSShaderLib& shader);
+	void tick(float elapsedTime);
 	void update(MyVec3 camPosition);
 
 	bool isDead();

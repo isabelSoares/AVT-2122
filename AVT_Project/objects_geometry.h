@@ -81,7 +81,7 @@ public:
 	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
 
-	void tick();
+	void tick(float elapsedTime);
 };
 
 class MyRoad {
@@ -104,7 +104,7 @@ public:
 
 	void render(VSShaderLib& shader);
 
-	void tick();
+	void tick(float elapsedTime);
 };
 
 class MyCar {
@@ -160,7 +160,7 @@ public:
 	float getDirectionDegrees();
 	std::vector<MyVec3> getBoundRect();
 
-	void tick();
+	void tick(float elapsedTime);
 	void collisionStop();
 
 	void forward();
@@ -188,7 +188,7 @@ public:
 	MyVec3 getPosition();
 	std::vector<MyVec3> getBoundRect();
 
-	void tick();
+	void tick(float elapsedTime);
 };
 
 class MyPacketButter {
@@ -211,7 +211,7 @@ public:
 
 	void render(VSShaderLib& shader);
 
-	void tick();
+	void tick(float elapsedTime);
 };
 
 class MyCandle {
@@ -233,8 +233,6 @@ public:
 
 	void render(VSShaderLib& shader);
 	MyVec3 getPosition();
-
-	void tick();
 };
 
 class MyBillboardTree {

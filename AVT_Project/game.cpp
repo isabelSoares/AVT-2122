@@ -86,6 +86,8 @@ void renderQuad(VSShaderLib& shaderText, float xpos, float ypos, float width, fl
 void MyGame::pauseGame() { state = MyGameState::Paused; }
 void MyGame::resumeGame() { state = MyGameState::Running; }
 
+void MyGame::clicked() { clicked_something = true; }
+
 void MyGame::restartGame() {
 
 	if (state != MyGameState::Paused && state != MyGameState::Lost) return;
@@ -102,8 +104,12 @@ void MyGame::loseLife() {
 	lastAngle = CAR_INITIAL_ANGLE;
 	lastValidAngle = CAR_INITIAL_ANGLE;
 
-	if (lifes > 0) lifes = lifes - 1;
-	if (lifes == 0) state = MyGameState::Lost;
+	if (clicked_something) {
+		if (lifes > 0) lifes = lifes - 1;
+		if (lifes == 0) state = MyGameState::Lost;
+		
+		clicked_something = false;
+	}
 }
 
 void MyGame::update(MyVec3 carPosition) {

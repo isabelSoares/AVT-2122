@@ -39,6 +39,8 @@ extern Assimp::Importer importer;
 extern const aiScene* scene;
 char model_dir[50];
 
+const float TARGET_FPS = 50.0f;
+
 MyObject::MyObject() {}
 MyObject::MyObject(MyMesh meshTemp, MyVec3 positionTemp, MyVec3 scaleTemp, std::vector<MyVec3Rotation> rotateTemp) {
 	mesh = meshTemp;
@@ -364,14 +366,16 @@ std::vector<MyVec3> MyCheerio::getBoundRect() {
 	return { minPosition, maxPosition };
 }
 
-void MyCheerio::tick() {
+void MyCheerio::tick(float elapsedTime) {
 
-	velocity = velocity * (1 - FRICTION_COEFICIENT);
+	float factor = elapsedTime / (1000.0f / TARGET_FPS);
+
+	velocity += - velocity * FRICTION_COEFICIENT * factor;
 
 	// Update position
-	position.x += velocity * direction.x;
-	position.y += velocity * direction.y;
-	position.z += velocity * direction.z;
+	position.x += velocity * direction.x * factor;
+	position.y += velocity * direction.y * factor;
+	position.z += velocity * direction.z * factor;
 
 	cheerio.positionVec = position;
 }
@@ -471,8 +475,8 @@ void MyRoad::render(VSShaderLib& shader) {
 	for (MyCheerio cheerio : cheerios) cheerio.render(shader);
 }
 
-void MyRoad::tick() {
-	for (int index = 0; index < cheerios.size(); index++) cheerios[index].tick();
+void MyRoad::tick(float elapsedTime) {
+	for (int index = 0; index < cheerios.size(); index++) cheerios[index].tick(elapsedTime);
 }
 
 std::vector<MyCheerio> MyRoad::getCheerios() { return cheerios; }
@@ -601,10 +605,12 @@ std::vector<MyVec3> MyCar::getBoundRect() {
 	return { minPosition, maxPosition };
 }
 
-void MyCar::tick() {
+void MyCar::tick(float elapsedTime) {
+
+	float factor = elapsedTime / (1000.0f / TARGET_FPS);
 
 	// Update velocity
-	velocity = velocity + acceleration;
+	velocity = velocity + acceleration * factor;
 	if (velocity >= MAX_VELOCITY) velocity = MAX_VELOCITY;
 	else if (velocity <= -MAX_VELOCITY) velocity = -MAX_VELOCITY;
 
@@ -629,16 +635,18 @@ void MyCar::tick() {
 	double angleRadians = atan2(det, dot);
 	double angleDegrees = fmod((angleRadians * 180 / O_PI) + 360, 360);
 
-	angleDegrees += rotationWheelAngle;
+	angleDegrees += rotationWheelAngle * factor;
 
 	direction.x = float(cos((angleDegrees) / (180 / O_PI)));
 	direction.y = 0;
 	direction.z = float(sin((angleDegrees) / (180 / O_PI)));
 
 	// Update position
-	position.x += velocity * direction.x;
-	position.y += velocity * direction.y;
-	position.z += velocity * direction.z;
+	position.x += velocity * direction.x * factor;
+	position.y += velocity * direction.y * factor;
+	position.z += velocity * direction.z * factor;
+
+	//printf("%f\t\t%f\t\t%f\n", position.x, position.y, position.z);
 
 	// Update Position and Rotation
 	updateObjects();
@@ -767,7 +775,9 @@ std::vector<MyVec3> MyOrange::getBoundRect() {
 	return { minPosition, maxPosition };
 }
 
-void MyOrange::tick() {
+void MyOrange::tick(float elapsedTime) {
+
+	float factor = elapsedTime / (1000.0f / TARGET_FPS);
 
 	// Update direction
 	float dot = 1 * direction.x + 0 * direction.z;
@@ -780,11 +790,11 @@ void MyOrange::tick() {
 	direction.z = float(sin((angleDegrees) / (180 / O_PI)));
 
 	// Update positions
-	orange.positionVec.x += velocity * direction.x;
-	orange.positionVec.y += velocity * direction.y;
-	orange.positionVec.z += velocity * direction.z;
+	orange.positionVec.x += velocity * direction.x * factor;
+	orange.positionVec.y += velocity * direction.y * factor;
+	orange.positionVec.z += velocity * direction.z * factor;
 
-	angleRotated += velocity * 13;
+	angleRotated += velocity * 13 * factor;
 	orange.rotateVec = { MyVec3Rotation{float(-angleDegrees - 90), 0, 1, 0}, MyVec3Rotation{- angleRotated, 1, 0, 0} };
 }
 
@@ -821,14 +831,16 @@ void MyPacketButter::render(VSShaderLib& shader) {
 	butter.render(shader);
 }
 
-void MyPacketButter::tick() {
+void MyPacketButter::tick(float elapsedTime) {
 
-	velocity = velocity * (1 - FRICTION_COEFICIENT);
+	float factor = elapsedTime / (1000.0f / TARGET_FPS);
+
+	velocity +=  -velocity * FRICTION_COEFICIENT * factor;
 
 	// Update position
-	position.x += velocity * direction.x;
-	position.y += velocity * direction.y;
-	position.z += velocity * direction.z;
+	position.x += velocity * direction.x * factor;
+	position.y += velocity * direction.y * factor;
+	position.z += velocity * direction.z * factor;
 
 	butter.positionVec = position;
 }

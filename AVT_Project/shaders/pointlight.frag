@@ -28,6 +28,7 @@ uniform bool shadowMode;
 
 uniform int fogActivated;
 uniform bool bumpActivated;
+uniform float fogFactor;
 
 // Pointlights
 uniform int lp_states[6];
@@ -74,12 +75,12 @@ in Data {
 } DataIn;
 
 //Exponential Fog:
-vec4 applyFog( in vec3 rgb, in float distance, in float alpha) {
+vec4 applyFog( in vec3 rgb, in float distance) {
 
 	float fogAmount = exp( -distance*0.05 );
-	vec3 fogColor = vec3(0.5,0.6,0.7);
-	vec3 final_color = mix(fogColor, rgb, fogAmount );
-	return vec4(final_color, alpha);
+	vec3 fogColor = vec3(0.5, 0.6, 0.7);
+	vec3 final_color = mix(fogColor, rgb, min(1.0f, fogAmount * fogFactor));
+	return vec4(final_color, 1.0f);
 }
 
 vec4 diff, auxSpec;
@@ -88,7 +89,8 @@ void main() {
 
 	// ============================== COMMON CALCULATIONS ==============================
 
-	int numberOfLights = 0;
+	int numberOfLights;
+	vec4 tmpFinalLightsColor;
 
 	vec3 n = normalize(DataIn.normal);
 	vec3 e = normalize(DataIn.eye);
@@ -124,6 +126,9 @@ void main() {
 	// ============================== =================== ==============================
 
 	vec4 finalLightsColor = vec4(0.0);
+
+	numberOfLights = 0;
+	tmpFinalLightsColor = vec4(0.0);
 	
 	// Spotlights
 	for (int lightIndex = 0 ; lightIndex < DataIn.ls_directions.length() ; lightIndex++ ) {
@@ -146,13 +151,18 @@ void main() {
 			spec = auxSpec * pow(intSpec, mat.shininess);
 		}
 
-		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
-		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
-		else if (texMode == 6) finalLightsColor += intensity * texel3 + spec;
-		else if (texMode == 7) finalLightsColor += intensity * texel4 + spec;
-		else if (texMode == 10) finalLightsColor += intensity * texel5 + spec;
-		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
+		if (texMode == 3) tmpFinalLightsColor += intensity * texel0 * texel1 + spec;
+		else if (texMode == 4) tmpFinalLightsColor += intensity * texel2 + spec;
+		else if (texMode == 6) tmpFinalLightsColor += intensity * texel3 + spec;
+		else if (texMode == 7) tmpFinalLightsColor += intensity * texel4 + spec;
+		else if (texMode == 10) tmpFinalLightsColor += intensity * texel5 + spec;
+		else tmpFinalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
+
+	if (numberOfLights > 0 && texMode == 3) finalLightsColor = finalLightsColor + tmpFinalLightsColor;
+	else if (numberOfLights > 0) finalLightsColor = finalLightsColor + (tmpFinalLightsColor / numberOfLights);
+	numberOfLights = 0;
+	tmpFinalLightsColor = vec4(0.0);
 
 	// DirectionalLights
 	for (int lightIndex = 0 ; lightIndex < DataIn.ld_directions.length() ; lightIndex++ ) {
@@ -173,13 +183,17 @@ void main() {
 			spec = auxSpec * pow(intSpec, mat.shininess);
 		}
 
-		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
-		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
-		else if (texMode == 6) finalLightsColor += intensity * texel3 + spec;
-		else if (texMode == 7) finalLightsColor += intensity * texel4 + spec;
-		else if (texMode == 10) finalLightsColor += intensity * texel5 + spec;
-		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
+		if (texMode == 3) tmpFinalLightsColor += intensity * texel0 * texel1 + spec;
+		else if (texMode == 4) tmpFinalLightsColor += intensity * texel2 + spec;
+		else if (texMode == 6) tmpFinalLightsColor += intensity * texel3 + spec;
+		else if (texMode == 7) tmpFinalLightsColor += intensity * texel4 + spec;
+		else if (texMode == 10) tmpFinalLightsColor += intensity * texel5 + spec;
+		else tmpFinalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
+
+	if (numberOfLights > 0) finalLightsColor = finalLightsColor + (tmpFinalLightsColor / numberOfLights);
+	numberOfLights = 0;
+	tmpFinalLightsColor = vec4(0.0);
 	
 	// Pointlights
 	for (int lightIndex = 0 ; lightIndex < DataIn.lp_directions.length() ; lightIndex++ ) {
@@ -200,18 +214,20 @@ void main() {
 			spec = auxSpec * pow(intSpec, mat.shininess);
 		}
 
-		if (texMode == 3) finalLightsColor += intensity * texel0 * texel1 + spec;
-		else if (texMode == 4) finalLightsColor += intensity * texel2 + spec;
-		else if (texMode == 6) finalLightsColor += intensity * texel3 + spec;
-		else if (texMode == 7) finalLightsColor += intensity * texel4 + spec;
-		else if (texMode == 10) finalLightsColor += intensity * texel5 + spec;
-		else finalLightsColor += max(intensity * diff, diff * 0.15) + spec;
+		if (texMode == 3) tmpFinalLightsColor += intensity * texel0 * texel1 + spec;
+		else if (texMode == 4) tmpFinalLightsColor += intensity * texel2 + spec;
+		else if (texMode == 6) tmpFinalLightsColor += intensity * texel3 + spec;
+		else if (texMode == 7) tmpFinalLightsColor += intensity * texel4 + spec;
+		else if (texMode == 10) tmpFinalLightsColor += intensity * texel5 + spec;
+		else tmpFinalLightsColor += max(intensity * diff, diff * 0.15) + spec;
 	}
+
+	if (numberOfLights > 0) finalLightsColor = finalLightsColor + (tmpFinalLightsColor / numberOfLights);
 
 	colorOut = finalLightsColor;
 	
 	if (texMode == 3) colorOut = max(finalLightsColor, 0.37 * texel0 * texel1 );
-	else if (texMode == 4) colorOut = max(finalLightsColor / numberOfLights, 0.15 * texel2 );
+	else if (texMode == 4) colorOut = max(finalLightsColor, 0.15 * texel2 );
 	else if (texMode == 5) {
 
 		if ((texel0.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
@@ -221,12 +237,12 @@ void main() {
 	} else if (texMode == 6) {
 	
 		if(texel3.a == 0.0) discard;
-		else colorOut = vec4(max(vec3(finalLightsColor / numberOfLights), 0.1*texel3.rgb), texel3.a);
+		else colorOut = vec4(max(vec3(finalLightsColor), 0.1*texel3.rgb), texel3.a);
 
 	} else if (texMode == 7) {
 
 		if ((texel4.a == 0.0)  || (mat.diffuse.a == 0.0) ) discard;
-		else colorOut = max(finalLightsColor / 5, mat.diffuse) * texel4;
+		else colorOut = max(finalLightsColor, mat.diffuse) * texel4;
 
 		return;
 
@@ -252,12 +268,12 @@ void main() {
 
 	} else if (texMode == 10) {
 
-		colorOut = max(finalLightsColor * 1.5 / numberOfLights, 0.15 * texel5 );
+		colorOut = max(finalLightsColor * 1.5, 0.15 * texel5 );
 	
-	} else if (mat.texCount == 0) colorOut = max(finalLightsColor / numberOfLights, diff * 0.1);
+	} else if (mat.texCount == 0) colorOut = max(finalLightsColor, diff * 0.1);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);
-
+	
 	if (shadowMode) {
 		colorOut = vec4(0.8, 0.8, 0.8, 1.0);
 		if (fogActivated == 1) colorOut = vec4(0.95, 0.0, 0.00, 1.0);
@@ -265,6 +281,6 @@ void main() {
 
 	if (fogActivated == 1) {
 		float dist = length(DataIn.pos);
-		colorOut = applyFog(vec3(colorOut), dist * 0.5, colorOut.a);
+		colorOut = applyFog(vec3(colorOut), dist);
 	}
 }

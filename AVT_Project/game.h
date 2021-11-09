@@ -16,6 +16,8 @@ public:
 	int gameTime = 0;
 	float gameScore = 0;
 	int lifes = START_LIFES;
+
+	bool clicked_something = false;
 	MyGameState state = MyGameState::Running;
 
 	// Keep track of car
@@ -25,6 +27,7 @@ public:
 	void pauseGame();
 	void resumeGame();
 	void restartGame();
+	void clicked();
 
 	void loseLife();
 

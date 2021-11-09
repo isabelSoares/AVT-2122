@@ -21,6 +21,8 @@
 #include <fstream>
 #include <vector>
 
+#include <chrono>
+
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
 // GLUT is the toolkit to interface with the OS
@@ -80,7 +82,7 @@ std::vector<MyWaterParticle> particles;
 
 // =================================== CAMERA OBJECTS ===================================
 
-float ratio, window_width, window_height;
+float windowRatio, window_width, window_height;
 
 const int ORTHO_CAMERA_ACTIVE = 0;
 const int TOP_PERSPECTIVE_CAMERA_ACTIVE = 1;
@@ -89,11 +91,11 @@ const int CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE = 3;
 
 int activeCamera = CAR_PERSPECTIVE_CAMERA_ACTIVE;
 
-MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
-MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 130.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
-MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0});
-MyCamera carInsideCamera = MyCamera(MyCameraType::Perspective, 0, 15, 0.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
-MyCamera carBehindCamera = MyCamera(MyCameraType::Perspective, 0, 15, 0.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 });
+MyCamera orthoCamera = MyCamera(MyCameraType::Ortho, 0, 90, 5.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 }, 10.0f);
+MyCamera topPerspectiveCamera = MyCamera(MyCameraType::Perspective, 0, 90, 245.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 }, 150000.0f);
+MyCamera carCamera = MyCamera(MyCameraType::Perspective, 0, 15, 8.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0}, 1.0f);
+MyCamera carInsideCamera = MyCamera(MyCameraType::Perspective, 0, 15, 0.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 }, 1.0f);
+MyCamera carBehindCamera = MyCamera(MyCameraType::Perspective, 0, 15, 0.0f, MyVec3{ 0, 0, 0 }, MyVec3{ 0, 0, 0 }, 1.0f);
 
 std::vector<MyCamera*> cameras = {
 	&orthoCamera ,
@@ -135,6 +137,7 @@ MyPointlight pointlights[NUMBER_POINTLIGHTS] = {
 // =================================== OTHER OBJECTS ===================================
 
 MyGame game = MyGame();
+auto startTime = std::chrono::high_resolution_clock::now();
 
 bool fogActivated = false;
 bool flareEffect = false;
@@ -188,6 +191,7 @@ GLint normal_uniformId;
 GLint reflect_perFragment_uniformId;
 GLint fogActivated_uniformId;
 GLint bumpActivated_uniformId;
+GLint fogFactor_uniformId;
 GLint bumpMode_uniformId;
 GLint shadowMode_uniformId;
 
@@ -245,7 +249,7 @@ void initGameObjects() {
 				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, 0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}),
 				MyPacketButter(MyVec3{ 0.20 * TABLE_SIZE, 0.6, -0.33 * TABLE_SIZE }, MyVec3{3.0f, 1.2f, 1.5f}) };
 	candles = { MyCandle(MyVec3{-0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[0]), MyCandle(MyVec3{0.34 * TABLE_SIZE, 0, 0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[1]),
-				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 20, 4, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.6, &pointlights[2]),
+				MyCandle(MyVec3{ 0, 0, -0.48 * TABLE_SIZE}, 20, 3, &pointlights[3]), MyCandle(MyVec3{ 0, 0, 0.32 * TABLE_SIZE}, 2, 0.6, &pointlights[2]),
 				MyCandle(MyVec3{-0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[4]), MyCandle(MyVec3{0.16 * TABLE_SIZE, 0, -0.22 * TABLE_SIZE}, 2, 0.6, &pointlights[5]) };
 	
 	float square_size = TABLE_SIZE / CHECKER_LENGTH;
@@ -345,7 +349,7 @@ void drawStencilBackMirror() {
 	glUseProgram(shader.getProgramIndex());
 
 	translate(MODEL, 0, 1.74, 0);
-	scale(MODEL, 0.831 * (1.887906f / ratio), 0.5, 1);
+	scale(MODEL, 0.831 * (1.887906f / windowRatio), 0.5, 1);
 	translate(MODEL, 0.045, 0, 0);
 	// send matrices to OGL
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -373,8 +377,8 @@ void changeCameraSize() {
 	loadIdentity(PROJECTION);
 
 	MyCamera* currentCamera = cameras[activeCamera];
-	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, ratio, 0.1f, 1000.0f); }
-	else { ortho(-ORTHO_FRUSTUM_HEIGHT * ratio, ORTHO_FRUSTUM_HEIGHT * ratio, -ORTHO_FRUSTUM_HEIGHT, ORTHO_FRUSTUM_HEIGHT, -20, 2000); }
+	if (currentCamera->type == MyCameraType::Perspective) { perspective(53.13f, windowRatio, 0.1f, 1000.0f); }
+	else { ortho(-ORTHO_FRUSTUM_HEIGHT * windowRatio, ORTHO_FRUSTUM_HEIGHT * windowRatio, -ORTHO_FRUSTUM_HEIGHT, ORTHO_FRUSTUM_HEIGHT, -20, 2000); }
 }
 
 // ------------------------------------------------------------
@@ -390,7 +394,7 @@ void changeSize(int w, int h) {
 	// set the viewport to be the entire window
 	glViewport(0, 0, w, h);
 	// set the projection matrix
-	ratio = (1.0f * w) / h;
+	windowRatio = (1.0f * w) / h;
 	window_width = w;
 	window_height = h;
 	changeCameraSize();
@@ -512,7 +516,7 @@ void checkCollisions() {
 		if (isCollision(carMinPosition, carMaxPosition, cheerioMinPosition, cheerioMaxPosition)) {
 			if (collision != CollisionType::RESTART) collision = CollisionType::STOP;
 
-			road.cheerios[cheerioIndex].velocity = 0.015;
+			road.cheerios[cheerioIndex].velocity = car.velocity * 0.02 + 0.15;
 			MyVec3 movementVector = (road.cheerios[cheerioIndex].getPosition() - car.getPosition()).normalize();
 			road.cheerios[cheerioIndex].direction = MyVec3{ movementVector.x, 0, movementVector.z };
 		}
@@ -528,7 +532,7 @@ void checkCollisions() {
 		if (isCollision(carMinPosition, carMaxPosition, butterMinPosition, butterMaxPosition)) {
 			if (collision != CollisionType::RESTART) collision = CollisionType::STOP;
 
-			butters[i].velocity = 0.015;
+			butters[i].velocity = car.velocity * 0.02 + 0.15;
 			MyVec3 movementVector = (butters[i].getPosition() - car.getPosition()).normalize();
 			butters[i].direction = MyVec3{ movementVector.x, 0, movementVector.z };
 		}
@@ -640,11 +644,13 @@ void renderScene(void) {
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
 	glUniform1i(bumpActivated_uniformId, bumpMapping);
+	glUniform1f(fogFactor_uniformId, currentCamera->fogFactor);
 
 	if (game.state == MyGameState::Restart) {
 
 		initGameObjects();
 		game.resumeGame();
+		game.clicked_something = false;
 	}
 
 	// ================================ Check Position Car ================================
@@ -761,7 +767,7 @@ void renderScene(void) {
 	}
 
 	// ====================================== ======= ======================================
-	
+
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glEnable(GL_STENCIL_TEST);
 	if (activeCamera == CAR_INSIDE_PERSPECTIVE_CAMERA_ACTIVE) drawStencilBackMirror();
@@ -811,15 +817,26 @@ void renderScene(void) {
 		renderWholeFlare(shader, lightPos);
 	}
 
+	// Figure out exactly how much time has passed since last tick
+	auto end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float> timeDifference = end - startTime;
+	std::chrono::duration<float, std::ratio<1, 1000>> timeDuration = end - startTime;
+	//std::cout << timeDuration.count() << std::endl;
+	float timeSinceLastRender = 1000.0f / 60.0f;
+	timeSinceLastRender = timeDuration.count();
+
 	if (game.state == MyGameState::Running) {
 
-		car.tick();
-		road.tick();
-		for (MyOrange& orange : oranges) { orange.tick(); }
-		for (MyPacketButter& butter : butters) { butter.tick(); }
+		car.tick(timeSinceLastRender);
+		road.tick(timeSinceLastRender);
+		for (MyOrange& orange : oranges) { orange.tick(timeSinceLastRender); }
+		for (MyPacketButter& butter : butters) { butter.tick(timeSinceLastRender); }
 	}
 
 	checkCollisions();
+	startTime = std::chrono::high_resolution_clock::now();
+
+	carPosition = car.getPosition();
 
 	// Update Car Camera
 	carCamera.translation.x = carPosition.x;
@@ -827,8 +844,6 @@ void renderScene(void) {
 	carCamera.translation.z = carPosition.z;
 	carCamera.lookAtPosition = carPosition;
 	carCamera.rotationDegrees = - (car.getDirectionDegrees() - 270.0f);
-
-	carPosition = car.getPosition();
 
 	// Update Car Inside Camera
 	carInsideCamera.translation.x = carPosition.x - 0.25f * car.direction.x;
@@ -897,18 +912,22 @@ void processKeys(unsigned char key, int xx, int yy) {
 		// ================= CAR STUFF =================
 		case 'O':
 		case 'o':
+			game.clicked();
 			car.turnLeft();
 			break;
 		case 'P':
 		case 'p':
+			game.clicked();
 			car.turnRight();
 			break;
 		case 'A':
 		case 'a':
+			game.clicked();
 			car.backward();
 			break;
 		case 'Q':
 		case 'q':
+			game.clicked();
 			car.forward();
 			break;
 
@@ -1148,6 +1167,7 @@ GLuint setupShaders() {
 	reflect_perFragment_uniformId = glGetUniformLocation(shader.getProgramIndex(), "reflect_perFrag");
 	fogActivated_uniformId = glGetUniformLocation(shader.getProgramIndex(), "fogActivated");
 	bumpActivated_uniformId = glGetUniformLocation(shader.getProgramIndex(), "bumpActivated");
+	fogFactor_uniformId = glGetUniformLocation(shader.getProgramIndex(), "fogFactor");
 
 	// Pointlight Get UniformID
 	lpPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "lp_positions");

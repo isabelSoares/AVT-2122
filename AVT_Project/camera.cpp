@@ -16,7 +16,7 @@
 
 #include "camera.h"
 
-MyCamera::MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp) {
+MyCamera::MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp, float fogFactorTemp) {
 
 	position = MyVec3 { 0, 0, 0 };
 	type = typeTemp;
@@ -27,6 +27,8 @@ MyCamera::MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float
 
 	translation = translationTemp;
 	lookAtPosition = lookAtPositionTemp;
+
+	fogFactor = fogFactorTemp;
 };
 
 void MyCamera::updateCamera() {

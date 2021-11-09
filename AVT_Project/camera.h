@@ -19,8 +19,10 @@ public:
 	MyVec3 translation;
 	float rotationDegrees = 0;
 
+	float fogFactor;
+
 	MyCamera();
-	MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp);
+	MyCamera(MyCameraType typeTemp, float alphaTemp, float betaTemp, float rTemp, MyVec3 translationTemp, MyVec3 lookAtPositionTemp, float fogFactorTemp);
 
 	void updateCamera();
 	void updateCameraWithAux(float alphaAux, float betaAux, float rAux);

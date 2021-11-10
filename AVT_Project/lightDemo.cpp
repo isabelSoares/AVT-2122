@@ -158,7 +158,7 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 15;
+const int NUMBER_ORANGES = 0;
 const int DISTANCE_CHEERIOS = 10.0;
 //const int DISTANCE_CHEERIOS = 3.5;
 const int NUMBER_PARTICLES = 2;
@@ -212,9 +212,9 @@ GLint lsAngle_uniformId;
 GLint lsState_uniformId;
 
 // Textures UniformID
-GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_cube_loc, texbump_loc0;
+GLint tex_loc0, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_loc5, tex_cube_loc, texbump_loc0, tex_loc6;
 GLint texMode_uniformId;
-GLuint TextureArray[8];
+GLuint TextureArray[9];
 GLuint FlareTextureArray[5];
 
 // Assimp UniformID
@@ -568,7 +568,10 @@ void drawObjects(bool shadowMode) {
 	// Non Transparent Objects
 	road.render(shader);
 	for (MyOrange& orange : oranges) { orange.render(shader); }
-	for (MyCandle& candle : candles) { candle.render(shader); }
+	for (MyCandle& candle : candles) {
+		candle.update(currentCamera->position);
+		candle.render(shader, shadowMode);
+	}
 	car.render(shader);
 
 	// Transparent with non transparent behavior
@@ -634,6 +637,8 @@ void renderScene(void) {
 	glBindTexture(GL_TEXTURE_2D, TextureArray[6]);
 	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[7]);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[8]);
 
 	glUniform1i(tex_loc0, 0);
 	glUniform1i(tex_loc1, 1);
@@ -643,6 +648,7 @@ void renderScene(void) {
 	glUniform1i(tex_cube_loc, 5);
 	glUniform1i(tex_loc5, 6);
 	glUniform1i(texbump_loc0, 7);
+	glUniform1i(tex_loc6, 8);
 
 	glUniform1i(fogActivated_uniformId, fogActivated);
 	glUniform1i(bumpActivated_uniformId, bumpMapping);
@@ -1194,6 +1200,7 @@ GLuint setupShaders() {
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	tex_loc5 = glGetUniformLocation(shader.getProgramIndex(), "texmap5");
+	tex_loc6 = glGetUniformLocation(shader.getProgramIndex(), "texmap6");
 	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 	texbump_loc0 = glGetUniformLocation(shader.getProgramIndex(), "texmapBump0");
 
@@ -1248,7 +1255,7 @@ int init() {
 		SymbolInformation{"coin", "./materials/coin.png"}
 	});
 
-	glGenTextures(8, TextureArray);
+	glGenTextures(9, TextureArray);
 	Texture2D_Loader(TextureArray, "./materials/roadGrass3.jpg", 0);
 	Texture2D_Loader(TextureArray, "./materials/lightwood.tga", 1);
 	Texture2D_Loader(TextureArray, "./materials/orange.jpg", 2);
@@ -1259,6 +1266,7 @@ int init() {
 	TextureCubeMap_Loader(TextureArray, filenames, 5);
 	Texture2D_Loader(TextureArray, "./materials/candle.jpg", 6);
 	Texture2D_Loader(TextureArray, "./materials/candleBumpmap.jpg", 7);
+	Texture2D_Loader(TextureArray, "./materials/flame.png", 8);
 
 	//Flare elements textures
 	glGenTextures(5, FlareTextureArray);

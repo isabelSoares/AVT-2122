@@ -92,6 +92,7 @@ void MyObject::render(VSShaderLib& shader) {
 	else if (textureOption == MyTextureOption::SkyBox) glUniform1i(texMode_uniformId, 8);
 	else if (textureOption == MyTextureOption::CubeReflector) glUniform1i(texMode_uniformId, 9);
 	else if (textureOption == MyTextureOption::Candle) glUniform1i(texMode_uniformId, 10);
+	else if (textureOption == MyTextureOption::Flame) glUniform1i(texMode_uniformId, 11);
 	else glUniform1i(texMode_uniformId, 0);
 
 	glUniform1i(reflect_perFragment_uniformId, reflectedPerFrag ? 1 : 0);
@@ -242,27 +243,27 @@ void MyAssimpObject::render(VSShaderLib& shader, const aiScene* sc, const aiNode
 					if (diffMapCount == 0) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 14);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else if (diffMapCount == 1) {
 						diffMapCount++;
 						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
+						glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 14);
 						glUniform1ui(diffMapCount_loc, diffMapCount);
 					}
 					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 14);
 					glUniform1i(specularMap_loc, true);
 				}
 				else if (meshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
 					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
 					if (normalMapKey)
 						glUniform1i(normalMap_loc, normalMapKey);
-					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 13);
+					glUniform1i(loc, meshes[nd->mMeshes[n]].texUnits[i] + 14);
 
 				}
 				else printf("Texture Map not supported\n");
@@ -893,6 +894,26 @@ MyCandle::MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPo
 	candle.textureOption = MyTextureOption::Candle;
 	candle.bumpmapOption = MyBumpMapOption::Candle;
 
+	float flameSize = radius * 2.0f;
+	MyMesh flameMesh = createQuad(flameSize * 1.0f, flameSize);
+
+	float flame_amb[] = { 1.0f, 0.0f, 0.2f, 1.0f };
+	float flame_diff[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float flame_spec[] = { 0.05f, 0.2f, 0.2f, 1.0f };
+	float flame_emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float flame_shininess = 10.0f;
+	int flame_texcount = 0;
+
+	memcpy(flameMesh.mat.ambient, flame_amb, 4 * sizeof(float));
+	memcpy(flameMesh.mat.diffuse, flame_diff, 4 * sizeof(float));
+	memcpy(flameMesh.mat.specular, flame_spec, 4 * sizeof(float));
+	memcpy(flameMesh.mat.emissive, flame_emissive, 4 * sizeof(float));
+	flameMesh.mat.shininess = flame_shininess;
+	flameMesh.mat.texCount = flame_texcount;
+
+	flame = MyObject(flameMesh, position + MyVec3{ 0, height + flameSize / 2, 0 }, scaling, {});
+	flame.textureOption = MyTextureOption::Flame;
+
 	light->positionVec = MyVec3{position.x, position.y + height + radius, position.z};
 }
 
@@ -900,9 +921,18 @@ MyVec3 MyCandle::getPosition() {
 	return position;
 }
 
-void MyCandle::render(VSShaderLib& shader) {
+void MyCandle::render(VSShaderLib& shader, bool shadowMode) {
 	candle.render(shader);
+	if (!shadowMode && light->state == MyPointlightState::On) flame.render(shader);
 }
+
+void MyCandle::update(MyVec3 camPosition) {
+
+	float camPositionTransformed[3] = { camPosition.x, camPosition.y, camPosition.z };
+	float positionTransformed[3] = { position.x, position.y + height + radius / 2, position.z };
+	flame.rotateVec = l3dBillboardCylindricalBegin(camPositionTransformed, positionTransformed);
+}
+
 
 MyBillboardTree::MyBillboardTree() {}
 MyBillboardTree::MyBillboardTree(MyVec3 positionTemp, float sizeTemp) {

@@ -10,6 +10,7 @@ uniform sampler2D texmap2;
 uniform sampler2D texmap3;
 uniform sampler2D texmap4;
 uniform sampler2D texmap5;
+uniform sampler2D texmap6;
 
 uniform sampler2D texmapBump0;
 
@@ -98,7 +99,7 @@ void main() {
 	if (normalMap) n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);
 	else if (bumpActivated && bumpMode == 1) n = normalize(2.0 * texture(texmapBump0, DataIn.tex_coord).rgb - 1.0);
 
-	vec4 texel0, texel1, texel2, texel3, texel4, cube_texel, texel5;
+	vec4 texel0, texel1, texel2, texel3, texel4, cube_texel, texel5, texel6;
 	
 	if (texMode != 0) {
 		texel0 = texture(texmap0, DataIn.tex_coord);  // texel from roadGrass2.jpg
@@ -107,6 +108,7 @@ void main() {
 		texel3 = texture(texmap3, DataIn.tex_coord);  // texel from tree.tga
 		texel4 = texture(texmap4, DataIn.tex_coord);  // texel from particle.tga
 		texel5 = texture(texmap5, DataIn.tex_coord);  // texel from cheerio.png
+		texel6 = texture(texmap6, DataIn.tex_coord);  // texel from flame.png
 	}
 
 	// Auxiliary Variables for OBJs
@@ -269,7 +271,12 @@ void main() {
 	} else if (texMode == 10) {
 
 		colorOut = max(finalLightsColor * 1.5, 0.15 * texel5 );
+
+	} else if (texMode == 11) {
 	
+		if(texel6.a == 0.0) discard;
+		else colorOut = vec4(0.70 * texel6.rgb, texel6.a);
+
 	} else if (mat.texCount == 0) colorOut = max(finalLightsColor, diff * 0.1);
 
 	colorOut = vec4(vec3(colorOut), mat.diffuse.a);

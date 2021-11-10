@@ -10,7 +10,7 @@
 #include "spotlight.h"
 #include "pointlight.h"
 
-enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox, CubeReflector, Candle };
+enum class MyTextureOption { None, One, Two, Multitexturing, Orange, Flare, Tree, WaterParticle, SkyBox, CubeReflector, Candle, Flame };
 enum class MyBumpMapOption { None, Candle };
 
 class MyObject {
@@ -218,6 +218,7 @@ class MyCandle {
 public:
 	// ============ Candle Objects ===============
 	MyObject candle;
+	MyObject flame;
 
 	MyPointlight* light;
 	// ============ Candle Attributes ============
@@ -231,7 +232,9 @@ public:
 	MyCandle();
 	MyCandle(MyVec3 positionTemp, float heightTemp, float radiusTemp, MyPointlight* lightTemp);
 
-	void render(VSShaderLib& shader);
+	void render(VSShaderLib& shader, bool shadowMode);
+	void update(MyVec3 camPosition);
+
 	MyVec3 getPosition();
 };
 

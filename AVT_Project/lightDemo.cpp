@@ -158,7 +158,7 @@ int timesToGenerateParticles = 0;
 const int FPS = 60;
 
 const int TABLE_SIZE = 250;
-const int NUMBER_ORANGES = 0;
+const int NUMBER_ORANGES = 15;
 const int DISTANCE_CHEERIOS = 10.0;
 //const int DISTANCE_CHEERIOS = 3.5;
 const int NUMBER_PARTICLES = 2;
@@ -412,8 +412,8 @@ void dealWithLights(bool reflection) {
 	float reflectionFactor = reflection ? -1.0f : 1.0f;
 
 	// Pointlights Load Info
-	float* resp_pos = (float*)malloc(NUMBER_POINTLIGHTS * 4 * sizeof(float));
-	int* resp_state = (int*)malloc(NUMBER_POINTLIGHTS * sizeof(int));
+	float resp_pos[NUMBER_POINTLIGHTS * 4] = { 0.0f };
+	int resp_state[NUMBER_POINTLIGHTS] = { 0 };
 	for (int lightIndex = 0; lightIndex < NUMBER_POINTLIGHTS; lightIndex++) {
 
 		MyPointlight * currentPointlight = &pointlights[lightIndex];
@@ -430,8 +430,8 @@ void dealWithLights(bool reflection) {
 	glUniform1iv(lpState_uniformId, NUMBER_POINTLIGHTS, resp_state);
 
 	// DirectionalLight Load Info
-	float* resd_dir = (float*)malloc(NUMBER_DIRECTIONAL_LIGHTS * 4 * sizeof(float));
-	int* resd_state = (int*)malloc(NUMBER_DIRECTIONAL_LIGHTS * sizeof(int));
+	float resd_dir[NUMBER_DIRECTIONAL_LIGHTS * 4] = { 0.0f };
+	int resd_state[NUMBER_DIRECTIONAL_LIGHTS] = { 0 };
 	for (int lightIndex = 0; lightIndex < NUMBER_DIRECTIONAL_LIGHTS; lightIndex++) {
 
 		MyDirectionalLight * currentDirectionalLight = &directionalLights[lightIndex];
@@ -447,10 +447,10 @@ void dealWithLights(bool reflection) {
 	glUniform1iv(ldState_uniformId, NUMBER_DIRECTIONAL_LIGHTS, resd_state);
 
 	// Spotlights Load Info
-	float* ress_pos = (float*)malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
-	float* ress_dir = (float*)malloc(NUMBER_SPOTLIGHTS * 4 * sizeof(float));
-	float* ress_angle = (float*)malloc(NUMBER_SPOTLIGHTS * sizeof(float));
-	int* ress_state = (int*)malloc(NUMBER_SPOTLIGHTS * sizeof(int));
+	float ress_pos[NUMBER_SPOTLIGHTS * 4] = { 0.0f };
+	float ress_dir[NUMBER_SPOTLIGHTS * 4] = { 0.0f };
+	float ress_angle[NUMBER_SPOTLIGHTS] = { 0.0f };
+	int ress_state[NUMBER_SPOTLIGHTS] = { 0 };
 	for (int lightIndex = 0; lightIndex < NUMBER_SPOTLIGHTS; lightIndex++) {
 
 		MySpotlight* currentSpotlight = &spotlights[lightIndex];

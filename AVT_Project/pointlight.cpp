@@ -37,7 +37,7 @@ void MyPointlight::computeEyeStuff() {
 	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
 
 	float positionToTranslate[4] = { 0, 0, 0, 1 };
-	float * positionTranslated = (float*)malloc(4 * sizeof(float));
+	float positionTranslated[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	pushMatrix(MODEL);
 	multMatrixPoint(MODEL, positionToTranslate, positionTranslated);
 	popMatrix(MODEL);

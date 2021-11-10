@@ -137,7 +137,7 @@ MyVec3 MyObject::calculatePointInWorld(MyVec3 point) {
 	for (MyVec3 translateBefore : translationBeforeRotation) { translate(MODEL, translateBefore.x, translateBefore.y, translateBefore.z); }
 
 	float positionInArray[4] = { point.x, point.y, point.z , 1.0 };
-	float* positionTranslated = (float*)malloc(4 * sizeof(float));
+	float positionTranslated[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	multMatrixPoint(MODEL, positionInArray, positionTranslated);
 
 	popMatrix(MODEL);
